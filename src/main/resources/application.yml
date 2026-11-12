@@ -1,0 +1,71 @@
+server:
+  port: ${PUERTO}
+  shutdown: graceful
+
+spring:
+  application:
+    name: uco-kudos-backend
+  config:
+    import: optional:file:.env[.properties]
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: jdbc:postgresql://${BD_HOST}:${BD_PUERTO}/${BD_NOMBRE}?sslmode=${BD_SSLMODE:prefer}
+    username: ${BD_USUARIO}
+    password: ${BD_CLAVE}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${BD_ESQUEMA:update}
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PUERTO}
+      password: ${REDIS_CLAVE:}
+      ssl:
+        enabled: ${REDIS_SSL:false}
+  mail:
+    host: ${CORREO_HOST}
+    port: ${CORREO_PUERTO}
+    username: ${CORREO_USUARIO:}
+    password: ${CORREO_CLAVE:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+  servlet:
+    multipart:
+      max-file-size: ${ARCHIVOS_TAMANO_MAXIMO}
+      max-request-size: ${ARCHIVOS_TAMANO_TOTAL_MAXIMO:26214400}
+
+kudos:
+  archivos:
+    carpeta: ${ARCHIVOS_CARPETA}
+    tamano-maximo-en-bytes: ${ARCHIVOS_TAMANO_MAXIMO}
+    tipos-permitidos: ${ARCHIVOS_TIPOS_PERMITIDOS}
+    cantidad-maxima: ${ARCHIVOS_CANTIDAD_MAXIMA:5}
+  cache:
+    segundos-de-vida: ${CACHE_SEGUNDOS}
+  correo:
+    remitente: ${CORREO_REMITENTE}
+  whatsapp:
+    url-base: ${WHATSAPP_URL_BASE:https://api.twilio.com}
+    cuenta-sid: ${WHATSAPP_CUENTA_SID:}
+    token: ${WHATSAPP_TOKEN:}
+    numero-origen: ${WHATSAPP_NUMERO_ORIGEN:}
+  cola:
+    nombre: ${COLA_NOMBRE:cola:notificaciones}
+    intentos-maximos: ${COLA_INTENTOS:3}
+    espera-base-en-segundos: ${COLA_ESPERA_BASE:2}
+    canales: ${COLA_CANALES:correo,whatsapp,push}
+  cors:
+    origenes-permitidos: ${CORS_ORIGENES:*}

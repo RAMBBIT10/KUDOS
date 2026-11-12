@@ -1,0 +1,9 @@
+target
+.env
+subidas
+.idea
+.vscode
+*.iml
+.classpath
+.project
+.settings

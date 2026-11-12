@@ -1,0 +1,31 @@
+services:
+  base-datos:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${BD_USUARIO}
+      POSTGRES_PASSWORD: ${BD_CLAVE}
+      POSTGRES_DB: ${BD_NOMBRE}
+    ports:
+      - "5432:5432"
+    volumes:
+      - datos-postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      BD_HOST: base-datos
+      REDIS_HOST: redis
+    ports:
+      - "3000:3000"
+    depends_on:
+      - base-datos
+      - redis
+
+volumes:
+  datos-postgres:

@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  calidad:
+    name: Compilar, probar y analizar
+    runs-on: ubuntu-latest
+    services:
+      base-datos:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kudos
+          POSTGRES_PASSWORD: clave_de_prueba
+          POSTGRES_DB: kudos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kudos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PUERTO: 3000
+      BD_HOST: localhost
+      BD_PUERTO: 5432
+      BD_USUARIO: kudos
+      BD_CLAVE: clave_de_prueba
+      BD_NOMBRE: kudos
+      BD_ESQUEMA: update
+      REDIS_HOST: localhost
+      REDIS_PUERTO: 6379
+      CORREO_HOST: localhost
+      CORREO_PUERTO: 2525
+      CORREO_USUARIO: prueba
+      CORREO_CLAVE: prueba
+      CORREO_REMITENTE: kudos@uco.edu.co
+      WHATSAPP_CUENTA_SID: prueba
+      WHATSAPP_TOKEN: prueba
+      WHATSAPP_NUMERO_ORIGEN: "+14155238886"
+      ARCHIVOS_CARPETA: subidas
+      ARCHIVOS_TAMANO_MAXIMO: 5242880
+      ARCHIVOS_TIPOS_PERMITIDOS: image/png,image/jpeg,application/pdf
+      CACHE_SEGUNDOS: 60
+      COLA_ESPERA_BASE: 1
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preparar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Compilar, probar y medir cobertura
+        run: mvn -B verify
+
+      - name: Analisis estatico en SonarCloud
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.qualitygate.wait=true
+
+      - name: Trivy sobre dependencias y configuracion
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+          output: trivy-dependencias.txt
+
+      - name: Guardar reportes como evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-calidad
+          path: |
+            target/site/jacoco/jacoco.xml
+            target/surefire-reports
+            target/failsafe-reports
+            trivy-dependencias.txt
+
+  imagen:
+    name: Construir y revisar la imagen Docker
+    needs: calidad
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Construir la imagen
+        run: docker build -t uco-kudos-backend:ci .
+
+      - name: Trivy sobre la imagen
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: uco-kudos-backend:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+          output: trivy-imagen.txt
+
+      - name: Guardar reporte como evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-imagen
+          path: trivy-imagen.txt
