@@ -1,0 +1,26 @@
+{
+  "kind": "collectionType",
+  "collectionName": "notificaciones",
+  "info": {
+    "singularName": "notificacion",
+    "pluralName": "notificaciones",
+    "displayName": "Notificacion"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "canal": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "asunto": {
+      "type": "string"
+    },
+    "cuerpo": {
+      "type": "text",
+      "required": true
+    }
+  }
+}

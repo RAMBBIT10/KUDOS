@@ -1,5 +1,7 @@
 package co.edu.uco.kudos.notificaciones.infraestructura;
 
+import co.edu.uco.kudos.catalogos.aplicacion.CatalogoNotificaciones;
+import co.edu.uco.kudos.catalogos.aplicacion.PlantillaNotificacion;
 import co.edu.uco.kudos.compartido.ConfiguracionKudos;
 import co.edu.uco.kudos.kudos.dominio.Kudo;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
@@ -16,26 +18,31 @@ public class NotificadorWhatsapp implements Notificador {
 
     private final ConfiguracionKudos.Whatsapp datos;
     private final RestClient cliente;
+    private final CatalogoNotificaciones catalogo;
+    private final String canal;
 
-    public NotificadorWhatsapp(ConfiguracionKudos configuracion) {
+    public NotificadorWhatsapp(ConfiguracionKudos configuracion, CatalogoNotificaciones catalogo) {
         this.datos = configuracion.whatsapp();
         this.cliente = RestClient.builder().baseUrl(datos.urlBase()).build();
+        this.catalogo = catalogo;
+        this.canal = configuracion.canales().whatsapp();
     }
 
     @Override
     public String canal() {
-        return "whatsapp";
+        return canal;
     }
 
     @Override
     public ResultadoEnvio enviar(Usuario destinatario, Kudo kudo) {
+        PlantillaNotificacion plantilla = catalogo.plantilla(canal());
         MultiValueMap<String, String> formulario = new LinkedMultiValueMap<>();
-        formulario.add("From", "whatsapp:" + datos.numeroOrigen());
-        formulario.add("To", "whatsapp:" + destinatario.telefono());
-        formulario.add("Body", "Hola " + destinatario.nombre() + ", recibiste un Kudo: " + kudo.mensaje());
+        formulario.add("From", datos.prefijo() + datos.numeroOrigen());
+        formulario.add("To", datos.prefijo() + destinatario.telefono());
+        formulario.add("Body", plantilla.cuerpoPara(destinatario.nombre(), kudo.mensaje()));
 
         cliente.post()
-                .uri("/2010-04-01/Accounts/{cuenta}/Messages.json", datos.cuentaSid())
+                .uri(datos.rutaEnvio(), datos.cuentaSid())
                 .headers(cabeceras -> cabeceras.setBasicAuth(datos.cuentaSid(), datos.token()))
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(formulario)

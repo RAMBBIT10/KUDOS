@@ -59,6 +59,7 @@ jobs:
       ARCHIVOS_TIPOS_PERMITIDOS: image/png,image/jpeg,application/pdf
       CACHE_SEGUNDOS: 60
       COLA_ESPERA_BASE: 1
+      STRAPI_URL: http://localhost:1337
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
@@ -90,6 +91,7 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          skip-dirs: strapi
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "1"

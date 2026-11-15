@@ -38,15 +38,15 @@ public class AlmacenArchivos {
 
     private void validar(List<MultipartFile> archivos) {
         if (archivos.size() > reglas.cantidadMaxima()) {
-            throw new ReglaDeNegocioException("Se permiten maximo " + reglas.cantidadMaxima() + " archivos");
+            throw new ReglaDeNegocioException("ARCHIVOS_CANTIDAD_EXCEDIDA");
         }
         for (MultipartFile archivo : archivos) {
             String tipo = archivo.getContentType();
             if (tipo == null || !reglas.tiposPermitidos().contains(tipo)) {
-                throw new ReglaDeNegocioException("Tipo de archivo no permitido");
+                throw new ReglaDeNegocioException("TIPO_ARCHIVO_NO_PERMITIDO");
             }
             if (archivo.getSize() > reglas.tamanoMaximoEnBytes()) {
-                throw new ReglaDeNegocioException("El archivo supera el tamano permitido");
+                throw new ReglaDeNegocioException("ARCHIVO_MUY_GRANDE");
             }
         }
     }

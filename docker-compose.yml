@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${BD_CLAVE}
       POSTGRES_DB: ${BD_NOMBRE}
     ports:
-      - "5432:5432"
+      - "${BD_PUERTO}:5432"
     volumes:
       - datos-postgres:/var/lib/postgresql/data
 
@@ -15,17 +15,51 @@ services:
     ports:
       - "6379:6379"
 
+  base-datos-strapi:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${STRAPI_BD_USUARIO}
+      POSTGRES_PASSWORD: ${STRAPI_BD_CLAVE}
+      POSTGRES_DB: ${STRAPI_BD_NOMBRE}
+    volumes:
+      - datos-strapi:/var/lib/postgresql/data
+
+  strapi:
+    build: ./strapi
+    environment:
+      HOST: 0.0.0.0
+      PORT: 1337
+      APP_KEYS: ${STRAPI_APP_KEYS}
+      API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET}
+      TRANSFER_TOKEN_SALT: ${STRAPI_TRANSFER_TOKEN_SALT}
+      ENCRYPTION_KEY: ${STRAPI_ENCRYPTION_KEY}
+      JWT_SECRET: ${STRAPI_JWT_SECRET}
+      DATABASE_HOST: base-datos-strapi
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${STRAPI_BD_NOMBRE}
+      DATABASE_USERNAME: ${STRAPI_BD_USUARIO}
+      DATABASE_PASSWORD: ${STRAPI_BD_CLAVE}
+    ports:
+      - "1337:1337"
+    depends_on:
+      - base-datos-strapi
+
   api:
     build: .
     env_file: .env
     environment:
       BD_HOST: base-datos
+      BD_PUERTO: 5432
       REDIS_HOST: redis
+      STRAPI_URL: http://strapi:1337
     ports:
       - "3000:3000"
     depends_on:
       - base-datos
       - redis
+      - strapi
 
 volumes:
   datos-postgres:
+  datos-strapi:

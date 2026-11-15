@@ -35,13 +35,13 @@ public class PublicarKudo {
 
     public Kudo ejecutar(PeticionPublicarKudo peticion) {
         if (!ReglasMensaje.mensajeEsValido(peticion.mensaje())) {
-            throw new ReglaDeNegocioException("El mensaje no es valido");
+            throw new ReglaDeNegocioException("MENSAJE_INVALIDO");
         }
 
         usuarios.buscarPorId(peticion.autorId())
-                .orElseThrow(() -> new NoEncontradoException("El autor no existe"));
+                .orElseThrow(() -> new NoEncontradoException("AUTOR_NO_EXISTE"));
         usuarios.buscarPorId(peticion.destinatarioId())
-                .orElseThrow(() -> new NoEncontradoException("El destinatario no existe"));
+                .orElseThrow(() -> new NoEncontradoException("DESTINATARIO_NO_EXISTE"));
 
         Kudo kudo = kudos.guardar(new DatosNuevoKudo(
                 peticion.autorId(),
@@ -49,7 +49,7 @@ public class PublicarKudo {
                 peticion.mensaje().trim(),
                 peticion.adjuntos()));
 
-        auditoria.registrar(kudo.id(), "KUDO_CREADO", null, EstadoAuditoria.OK, "Kudo guardado en la base de datos");
+        auditoria.registrar(kudo.id(), "KUDO_CREADO", null, EstadoAuditoria.OK, "KUDO_GUARDADO");
         cache.borrarPorPrefijo(ClavesCache.prefijoDelDestinatario(kudo.destinatarioId()));
         publicador.kudoPublicado(kudo.id());
 

@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import co.edu.uco.kudos.auditoria.AuditoriaEntidad;
 import co.edu.uco.kudos.auditoria.AuditoriaJpa;
+import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
 import co.edu.uco.kudos.kudos.dominio.EstadoAuditoria;
 import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
 import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorCorreo;
@@ -51,8 +52,13 @@ class FlujoKudoIT {
     @MockBean
     private NotificadorWhatsapp whatsapp;
 
+    @MockBean
+    private CatalogoMensajes catalogoMensajes;
+
     @BeforeEach
     void prepararCanalesFalsos() {
+        when(catalogoMensajes.texto("MENSAJE_INVALIDO")).thenReturn("El mensaje no es válido");
+        when(catalogoMensajes.texto("DESTINATARIO_NO_EXISTE")).thenReturn("El destinatario no existe");
         when(correo.canal()).thenReturn("correo");
         when(correo.enviar(any(), any())).thenReturn(ResultadoEnvio.ENVIADO);
         when(whatsapp.canal()).thenReturn("whatsapp");
@@ -181,7 +187,9 @@ class FlujoKudoIT {
         UUID autorId = crearUsuario("Ines", "+573000000007");
         UUID destinatarioId = crearUsuario("Jorge", "+573000000008");
 
-        mockMvc.perform(armarPublicacion(autorId, destinatarioId, "")).andExpect(status().isBadRequest());
+        mockMvc.perform(armarPublicacion(autorId, destinatarioId, ""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("El mensaje no es válido"));
     }
 
     @Test
@@ -199,7 +207,9 @@ class FlujoKudoIT {
     void respondeNoEncontradoSiElDestinatarioNoExiste() throws Exception {
         UUID autorId = crearUsuario("Elena", "+573000000011");
 
-        mockMvc.perform(armarPublicacion(autorId, UUID.randomUUID(), "Hola")).andExpect(status().isNotFound());
+        mockMvc.perform(armarPublicacion(autorId, UUID.randomUUID(), "Hola"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("El destinatario no existe"));
     }
 
     @Test

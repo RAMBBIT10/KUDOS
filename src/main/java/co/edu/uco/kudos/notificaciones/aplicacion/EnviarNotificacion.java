@@ -36,19 +36,19 @@ public class EnviarNotificacion {
         Notificador notificador = notificadores.stream()
                 .filter(candidato -> canal.equals(candidato.canal()))
                 .findFirst()
-                .orElseThrow(() -> new NoEncontradoException("No existe el canal " + canal));
+                .orElseThrow(() -> new NoEncontradoException("CANAL_NO_EXISTE"));
 
         Kudo kudo = kudos.buscarPorId(kudoId)
-                .orElseThrow(() -> new NoEncontradoException("El kudo no existe"));
+                .orElseThrow(() -> new NoEncontradoException("KUDO_NO_EXISTE"));
         Usuario destinatario = usuarios.buscarPorId(kudo.destinatarioId())
-                .orElseThrow(() -> new NoEncontradoException("El destinatario no existe"));
+                .orElseThrow(() -> new NoEncontradoException("DESTINATARIO_NO_EXISTE"));
 
         try {
             ResultadoEnvio resultado = notificador.enviar(destinatario, kudo);
             if (resultado == ResultadoEnvio.ENVIADO) {
-                auditoria.registrar(kudo.id(), EVENTO, canal, EstadoAuditoria.OK, "Notificacion enviada");
+                auditoria.registrar(kudo.id(), EVENTO, canal, EstadoAuditoria.OK, "NOTIFICACION_ENVIADA");
             } else {
-                auditoria.registrar(kudo.id(), EVENTO, canal, EstadoAuditoria.OMITIDO, "El destinatario no esta conectado");
+                auditoria.registrar(kudo.id(), EVENTO, canal, EstadoAuditoria.OMITIDO, "DESTINATARIO_NO_CONECTADO");
             }
         } catch (RuntimeException error) {
             auditoria.registrar(kudo.id(), EVENTO, canal, EstadoAuditoria.ERROR, error.getMessage());

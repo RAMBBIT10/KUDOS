@@ -61,3 +61,40 @@ jobs:
           done
           echo "La aplicacion no respondio despues del despliegue"
           exit 1
+
+  desplegar-catalogos:
+    name: Publicar y desplegar el catalogo (Strapi)
+    if: ${{ github.event.workflow_run.conclusion == 'success' && vars.AZURE_STRAPI_NOMBRE != '' }}
+    runs-on: ubuntu-latest
+    environment: produccion
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Calcular el nombre de la imagen
+        run: echo "IMAGEN=ghcr.io/${GITHUB_REPOSITORY,,}-catalogos" >> "$GITHUB_ENV"
+
+      - name: Iniciar sesion en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Construir y publicar la imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: strapi
+          push: true
+          tags: |
+            ${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}
+            ${{ env.IMAGEN }}:latest
+
+      - name: Desplegar en Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_STRAPI_NOMBRE }}
+          publish-profile: ${{ secrets.AZURE_STRAPI_PUBLISH_PROFILE }}
+          images: ${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}

@@ -1,0 +1,23 @@
+{
+  "kind": "collectionType",
+  "collectionName": "mensajes",
+  "info": {
+    "singularName": "mensaje",
+    "pluralName": "mensajes",
+    "displayName": "Mensaje"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "codigo": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "texto": {
+      "type": "text",
+      "required": true
+    }
+  }
+}

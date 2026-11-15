@@ -1,0 +1,11 @@
+[
+  {
+    "canal": "correo",
+    "asunto": "Recibiste un Kudo en UCO Kudos",
+    "cuerpo": "Hola {nombre}, recibiste un reconocimiento:\n\n{mensaje}"
+  },
+  {
+    "canal": "whatsapp",
+    "cuerpo": "Hola {nombre}, recibiste un Kudo: {mensaje}"
+  }
+]

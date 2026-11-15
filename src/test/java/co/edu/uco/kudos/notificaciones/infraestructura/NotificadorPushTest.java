@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.edu.uco.kudos.compartido.ConfiguracionDePrueba;
 import co.edu.uco.kudos.kudos.dominio.Kudo;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
 import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
@@ -24,7 +25,7 @@ class NotificadorPushTest {
     private final Kudo kudo = new Kudo(UUID.randomUUID(), UUID.randomUUID(), destinatarioId, "Hola", Instant.now(), List.of());
 
     private final ConexionesPush conexiones = mock(ConexionesPush.class);
-    private final NotificadorPush notificador = new NotificadorPush(conexiones);
+    private final NotificadorPush notificador = new NotificadorPush(conexiones, ConfiguracionDePrueba.sinStrapi());
 
     @Test
     void omiteElEnvioSiElDestinatarioNoEstaConectado() {

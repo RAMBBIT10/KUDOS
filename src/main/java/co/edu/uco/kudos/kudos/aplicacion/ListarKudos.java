@@ -47,7 +47,7 @@ public class ListarKudos {
         try {
             return Instant.parse(cursor);
         } catch (DateTimeParseException error) {
-            throw new ReglaDeNegocioException("El cursor no es valido");
+            throw new ReglaDeNegocioException("CURSOR_INVALIDO");
         }
     }
 }

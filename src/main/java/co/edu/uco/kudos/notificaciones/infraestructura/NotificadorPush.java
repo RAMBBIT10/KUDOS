@@ -1,5 +1,6 @@
 package co.edu.uco.kudos.notificaciones.infraestructura;
 
+import co.edu.uco.kudos.compartido.ConfiguracionKudos;
 import co.edu.uco.kudos.kudos.dominio.Kudo;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
 import co.edu.uco.kudos.notificaciones.aplicacion.Notificador;
@@ -10,14 +11,16 @@ import org.springframework.stereotype.Component;
 public class NotificadorPush implements Notificador {
 
     private final ConexionesPush conexiones;
+    private final String canal;
 
-    public NotificadorPush(ConexionesPush conexiones) {
+    public NotificadorPush(ConexionesPush conexiones, ConfiguracionKudos configuracion) {
         this.conexiones = conexiones;
+        this.canal = configuracion.canales().push();
     }
 
     @Override
     public String canal() {
-        return "push";
+        return canal;
     }
 
     @Override

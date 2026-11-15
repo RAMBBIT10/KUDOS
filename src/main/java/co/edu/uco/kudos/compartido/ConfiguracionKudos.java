@@ -10,7 +10,9 @@ public record ConfiguracionKudos(
         Correo correo,
         Whatsapp whatsapp,
         Cola cola,
-        Cors cors) {
+        Cors cors,
+        Canales canales,
+        Strapi strapi) {
 
     public record Archivos(String carpeta, long tamanoMaximoEnBytes, List<String> tiposPermitidos, int cantidadMaxima) {
     }
@@ -21,12 +23,34 @@ public record ConfiguracionKudos(
     public record Correo(String remitente) {
     }
 
-    public record Whatsapp(String urlBase, String cuentaSid, String token, String numeroOrigen) {
+    public record Whatsapp(
+            String urlBase,
+            String rutaEnvio,
+            String prefijo,
+            String cuentaSid,
+            String token,
+            String numeroOrigen) {
     }
 
     public record Cola(String nombre, int intentosMaximos, int esperaBaseEnSegundos, List<String> canales) {
     }
 
     public record Cors(List<String> origenesPermitidos) {
+    }
+
+    public record Canales(String correo, String whatsapp, String push) {
+    }
+
+    public record Strapi(
+            String urlBase,
+            String token,
+            ColeccionMensajes mensajes,
+            ColeccionNotificaciones notificaciones) {
+    }
+
+    public record ColeccionMensajes(String ruta, String campoCodigo, String campoTexto) {
+    }
+
+    public record ColeccionNotificaciones(String ruta, String campoCanal, String campoAsunto, String campoCuerpo) {
     }
 }

@@ -1,0 +1,15 @@
+[
+  { "codigo": "MENSAJE_INVALIDO", "texto": "El mensaje no es válido" },
+  { "codigo": "AUTOR_NO_EXISTE", "texto": "El autor no existe" },
+  { "codigo": "DESTINATARIO_NO_EXISTE", "texto": "El destinatario no existe" },
+  { "codigo": "KUDO_NO_EXISTE", "texto": "El Kudo no existe" },
+  { "codigo": "CANAL_NO_EXISTE", "texto": "El canal de notificación no existe" },
+  { "codigo": "PLANTILLA_NO_EXISTE", "texto": "No existe la plantilla de la notificación" },
+  { "codigo": "CURSOR_INVALIDO", "texto": "El cursor no es válido" },
+  { "codigo": "ARCHIVOS_CANTIDAD_EXCEDIDA", "texto": "Superaste la cantidad máxima de archivos permitida" },
+  { "codigo": "TIPO_ARCHIVO_NO_PERMITIDO", "texto": "Tipo de archivo no permitido" },
+  { "codigo": "ARCHIVO_MUY_GRANDE", "texto": "El archivo supera el tamaño permitido" },
+  { "codigo": "REGISTRO_DUPLICADO", "texto": "Ya existe un registro con esos datos" },
+  { "codigo": "METODO_NO_PERMITIDO", "texto": "Método no permitido" },
+  { "codigo": "PETICION_INVALIDA", "texto": "La petición no es válida" }
+]

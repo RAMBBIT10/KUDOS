@@ -1,5 +1,6 @@
 package co.edu.uco.kudos.compartido;
 
+import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
 import co.edu.uco.kudos.kudos.aplicacion.NoEncontradoException;
 import co.edu.uco.kudos.kudos.aplicacion.ReglaDeNegocioException;
 import java.util.Map;
@@ -19,6 +20,12 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 @RestControllerAdvice
 public class ManejadorDeErrores {
 
+    private final CatalogoMensajes catalogo;
+
+    public ManejadorDeErrores(CatalogoMensajes catalogo) {
+        this.catalogo = catalogo;
+    }
+
     @ExceptionHandler({
             ReglaDeNegocioException.class,
             MethodArgumentNotValidException.class,
@@ -34,27 +41,27 @@ public class ManejadorDeErrores {
 
     @ExceptionHandler(NoEncontradoException.class)
     ResponseEntity<Map<String, String>> noEncontrado(NoEncontradoException error) {
-        return responder(HttpStatus.NOT_FOUND, error.getMessage());
+        return responder(HttpStatus.NOT_FOUND, catalogo.texto(error.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<Map<String, String>> conflicto() {
-        return responder(HttpStatus.CONFLICT, "Ya existe un registro con esos datos");
+        return responder(HttpStatus.CONFLICT, catalogo.texto("REGISTRO_DUPLICADO"));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     ResponseEntity<Map<String, String>> metodoNoPermitido() {
-        return responder(HttpStatus.METHOD_NOT_ALLOWED, "Metodo no permitido");
+        return responder(HttpStatus.METHOD_NOT_ALLOWED, catalogo.texto("METODO_NO_PERMITIDO"));
     }
 
     private String mensajeSeguro(Exception error) {
         if (error instanceof ReglaDeNegocioException) {
-            return error.getMessage();
+            return catalogo.texto(error.getMessage());
         }
         if (error instanceof MaxUploadSizeExceededException) {
-            return "El archivo supera el tamano permitido";
+            return catalogo.texto("ARCHIVO_MUY_GRANDE");
         }
-        return "La peticion no es valida";
+        return catalogo.texto("PETICION_INVALIDA");
     }
 
     private ResponseEntity<Map<String, String>> responder(HttpStatus estado, String mensaje) {
