@@ -87,16 +87,13 @@ jobs:
             -Dsonar.qualitygate.wait=true
 
       - name: Trivy sobre dependencias y configuracion
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          skip-dirs: strapi
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: "1"
-          format: table
-          output: trivy-dependencias.txt
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/proyecto" \
+            -w /proyecto \
+            aquasec/trivy:0.69.3 \
+            fs --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 \
+            --skip-dirs strapi --format table . | tee trivy-dependencias.txt
 
       - name: Guardar reportes como evidencia
         if: always()
@@ -121,14 +118,12 @@ jobs:
         run: docker build -t uco-kudos-backend:ci .
 
       - name: Trivy sobre la imagen
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: uco-kudos-backend:ci
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: "1"
-          format: table
-          output: trivy-imagen.txt
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.69.3 \
+            image --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 \
+            --format table uco-kudos-backend:ci | tee trivy-imagen.txt
 
       - name: Guardar reporte como evidencia
         if: always()
