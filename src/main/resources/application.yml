@@ -89,6 +89,7 @@ kudos:
       campo-cuerpo: ${STRAPI_CAMPO_CUERPO:cuerpo}
   cuentas:
     prefijo-telefono: ${TELEFONO_PREFIJO:+57}
+    largo-minimo-clave: ${CLAVE_LARGO_MINIMO:8}
     longitud-clave-temporal: ${CLAVE_TEMPORAL_LONGITUD:10}
     segundos-de-sesion: ${SESION_SEGUNDOS:28800}
     prefijo-sesion: ${SESION_PREFIJO:sesion:}

@@ -11,9 +11,15 @@ public class ReglasCuenta {
     private static final Pattern CORREO = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$");
 
     private final String prefijoTelefono;
+    private final int largoMinimoClave;
 
-    public ReglasCuenta(String prefijoTelefono) {
+    public ReglasCuenta(String prefijoTelefono, int largoMinimoClave) {
         this.prefijoTelefono = prefijoTelefono;
+        this.largoMinimoClave = largoMinimoClave;
+    }
+
+    public boolean claveEsValida(String clave) {
+        return clave != null && clave.length() >= largoMinimoClave;
     }
 
     public boolean correoEsValido(String correo) {

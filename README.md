@@ -37,6 +37,8 @@ El flujo es este:
 3. La persona ingresa con correo y clave. La clave se guarda con BCrypt y la sesión es un token opaco guardado en Redis que vence a las `SESION_SEGUNDOS`.
 4. Si intenta ingresar sin cuenta, con la solicitud pendiente o rechazada, la pantalla le dice exactamente cuál de los tres casos es.
 
+Después de entrar, cualquier persona (incluido el administrador) puede cambiar la clave temporal desde el botón "Cambiar clave": escribe la clave actual y la nueva dos veces, y la API la guarda cifrada con BCrypt (`PUT /sesion/clave`).
+
 La cuenta del administrador se crea sola al arrancar con `ADMIN_NOMBRE`, `ADMIN_CORREO` y `ADMIN_CLAVE`, si todavía no existe.
 
 ### Endpoints
@@ -146,6 +148,7 @@ Están todas en `.env.example`. Ninguna está escrita dentro del código.
 | `TELEFONO_PREFIJO` | Prefijo del país que el sistema le agrega al teléfono de 10 números que escribe el usuario (por defecto `+57`) |
 | `SESION_SEGUNDOS`, `SESION_PREFIJO` | Vida de la sesión en Redis y prefijo de sus llaves |
 | `CLAVE_TEMPORAL_LONGITUD` | Largo de la clave temporal que se manda al aprobar |
+| `CLAVE_LARGO_MINIMO` | Largo mínimo de la clave nueva cuando la persona la cambia (por defecto 8) |
 | `PLANTILLA_SOLICITUD`, `PLANTILLA_APROBADA`, `PLANTILLA_RECHAZADA`, `PLANTILLA_APROBADA_WHATSAPP` | Nombres de las plantillas de cuentas en Strapi (tienen valores por defecto) |
 | `CACHE_SEGUNDOS` | Vida de la caché |
 | `CORS_ORIGENES` | Orígenes permitidos (en producción, el dominio del frontend) |
@@ -481,6 +484,7 @@ Terminan en `Test` y no necesitan base de datos. Se corren con `mvn test`.
 | `CatalogoNotificacionesStrapiTest` | Plantilla con asunto y cuerpo, asunto vacío si el canal no lo tiene y error si el canal no tiene plantilla |
 | `ReglasCuentaTest` | Formato del correo (cualquier dominio), teléfono de 10 números y nombre |
 | `SolicitarCuentaTest` | Solicitud pendiente con aviso al administrador, correo con formato inválido, rol administrador y correo repetido |
+| `CambiarClaveTest` | Clave nueva guardada cifrada, clave actual incorrecta, clave nueva corta e igual a la actual |
 | `ResolverSolicitudTest` | Aprobar (clave cifrada y aviso), rechazar, solicitud ya resuelta y solicitud inexistente |
 | `IniciarSesionTest` | Ingreso correcto, sin cuenta, pendiente, rechazada y clave incorrecta |
 | `ManejadorDeErroresTest` | Que cada error responda con el estado correcto y el texto sacado del catálogo |

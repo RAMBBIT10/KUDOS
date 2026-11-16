@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
+import co.edu.uco.kudos.cuentas.aplicacion.CambiarClave;
 import co.edu.uco.kudos.cuentas.aplicacion.IniciarSesion;
 import co.edu.uco.kudos.cuentas.aplicacion.ListarSolicitudes;
 import co.edu.uco.kudos.cuentas.aplicacion.ResolverSolicitud;
@@ -34,8 +35,9 @@ class ControladoresDeCuentasTest {
             new CuentasControlador(solicitarCuenta, listarSolicitudes, resolverSolicitud, catalogo);
 
     private final IniciarSesion iniciarSesion = mock(IniciarSesion.class);
+    private final CambiarClave cambiarClave = mock(CambiarClave.class);
     private final Sesiones sesiones = mock(Sesiones.class);
-    private final SesionControlador sesion = new SesionControlador(iniciarSesion, sesiones);
+    private final SesionControlador sesion = new SesionControlador(iniciarSesion, cambiarClave, sesiones, catalogo);
 
     @Test
     void solicitarDevuelveElMensajeDelCatalogo() {
@@ -82,6 +84,16 @@ class ControladoresDeCuentasTest {
     @Test
     void actualDevuelveElUsuarioDeLaSesion() {
         assertThat(sesion.actual(pendiente).correo()).isEqualTo("luis@uco.net.co");
+    }
+
+    @Test
+    void cambiarClaveLlamaALaAplicacionYDevuelveMensaje() {
+        when(catalogo.texto("CLAVE_CAMBIADA")).thenReturn("Clave cambiada");
+
+        var respuesta = sesion.cambiarClave(pendiente, new SesionControlador.PeticionCambioClave("vieja", "nueva1234"));
+
+        assertThat(respuesta).containsEntry("mensaje", "Clave cambiada");
+        verify(cambiarClave).ejecutar(pendiente, "vieja", "nueva1234");
     }
 
     @Test

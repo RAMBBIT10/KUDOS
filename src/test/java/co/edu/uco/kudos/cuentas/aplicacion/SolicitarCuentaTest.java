@@ -25,7 +25,7 @@ class SolicitarCuentaTest {
 
     private final UsuarioRepositorio usuarios = mock(UsuarioRepositorio.class);
     private final AvisosDeCuenta avisos = mock(AvisosDeCuenta.class);
-    private final SolicitarCuenta casoDeUso = new SolicitarCuenta(usuarios, new ReglasCuenta("+57"), avisos);
+    private final SolicitarCuenta casoDeUso = new SolicitarCuenta(usuarios, new ReglasCuenta("+57", 8), avisos);
 
     private PeticionSolicitudCuenta peticion(String correo, Rol rol) {
         return new PeticionSolicitudCuenta("Diego Vega", correo, "3001234567", rol);

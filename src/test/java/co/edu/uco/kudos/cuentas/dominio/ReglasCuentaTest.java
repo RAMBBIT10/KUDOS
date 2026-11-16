@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 class ReglasCuentaTest {
 
-    private final ReglasCuenta reglas = new ReglasCuenta("+57");
+    private final ReglasCuenta reglas = new ReglasCuenta("+57", 8);
 
     @Test
     void aceptaCorreosDeCualquierDominio() {
@@ -45,6 +45,13 @@ class ReglasCuentaTest {
     void agregaElPrefijoDelPais() {
         assertThat(reglas.normalizarTelefono("3001234567")).isEqualTo("+573001234567");
         assertThat(reglas.normalizarTelefono("300 123-4567")).isEqualTo("+573001234567");
+    }
+
+    @Test
+    void validaElLargoMinimoDeLaClave() {
+        assertThat(reglas.claveEsValida("12345678")).isTrue();
+        assertThat(reglas.claveEsValida("1234567")).isFalse();
+        assertThat(reglas.claveEsValida(null)).isFalse();
     }
 
     @Test

@@ -108,6 +108,22 @@
     "texto": "La clave es incorrecta"
   },
   {
+    "codigo": "CLAVE_ACTUAL_INCORRECTA",
+    "texto": "La clave actual no es correcta"
+  },
+  {
+    "codigo": "CLAVE_NUEVA_INVALIDA",
+    "texto": "La clave nueva es muy corta, usa al menos 8 caracteres"
+  },
+  {
+    "codigo": "CLAVE_NUEVA_IGUAL",
+    "texto": "La clave nueva debe ser distinta a la actual"
+  },
+  {
+    "codigo": "CLAVE_CAMBIADA",
+    "texto": "Tu clave se cambió correctamente"
+  },
+  {
     "codigo": "SESION_INVALIDA",
     "texto": "Debes iniciar sesión"
   },

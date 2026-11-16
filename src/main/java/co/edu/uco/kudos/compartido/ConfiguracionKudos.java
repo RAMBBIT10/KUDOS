@@ -57,6 +57,7 @@ public record ConfiguracionKudos(
 
     public record Cuentas(
             String prefijoTelefono,
+            int largoMinimoClave,
             int longitudClaveTemporal,
             int segundosDeSesion,
             String prefijoSesion,

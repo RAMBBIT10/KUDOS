@@ -22,7 +22,7 @@ public final class ConfiguracionDePrueba {
                         new ConfiguracionKudos.ColeccionNotificaciones(
                                 "/api/notificaciones", "canal", "asunto", "cuerpo")),
                 new ConfiguracionKudos.Cuentas(
-                        "+57", 10, 3600, "sesion:", "Admin", "admin.prueba0000@uco.net.co", "",
+                        "+57", 8, 10, 3600, "sesion:", "Admin", "admin.prueba0000@uco.net.co", "",
                         "clave_admin", "cuenta-solicitud", "cuenta-aprobada", "cuenta-rechazada",
                         "cuenta-aprobada-whatsapp"));
     }

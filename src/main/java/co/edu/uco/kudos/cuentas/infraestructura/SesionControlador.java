@@ -1,10 +1,13 @@
 package co.edu.uco.kudos.cuentas.infraestructura;
 
+import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
+import co.edu.uco.kudos.cuentas.aplicacion.CambiarClave;
 import co.edu.uco.kudos.cuentas.aplicacion.IniciarSesion;
 import co.edu.uco.kudos.cuentas.aplicacion.ResultadoSesion;
 import co.edu.uco.kudos.cuentas.aplicacion.puertos.Sesiones;
 import co.edu.uco.kudos.kudos.dominio.Rol;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -12,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -24,6 +28,9 @@ public class SesionControlador {
     public record PeticionIngreso(String correo, String clave) {
     }
 
+    public record PeticionCambioClave(String claveActual, String claveNueva) {
+    }
+
     public record UsuarioDeSesion(UUID id, String nombre, String correo, Rol rol) {
     }
 
@@ -31,11 +38,16 @@ public class SesionControlador {
     }
 
     private final IniciarSesion iniciarSesion;
+    private final CambiarClave cambiarClave;
     private final Sesiones sesiones;
+    private final CatalogoMensajes catalogo;
 
-    public SesionControlador(IniciarSesion iniciarSesion, Sesiones sesiones) {
+    public SesionControlador(
+            IniciarSesion iniciarSesion, CambiarClave cambiarClave, Sesiones sesiones, CatalogoMensajes catalogo) {
         this.iniciarSesion = iniciarSesion;
+        this.cambiarClave = cambiarClave;
         this.sesiones = sesiones;
+        this.catalogo = catalogo;
     }
 
     @PostMapping
@@ -47,6 +59,13 @@ public class SesionControlador {
     @GetMapping
     public UsuarioDeSesion actual(@AuthenticationPrincipal Usuario usuario) {
         return convertir(usuario);
+    }
+
+    @PutMapping("/clave")
+    public Map<String, String> cambiarClave(
+            @AuthenticationPrincipal Usuario usuario, @RequestBody PeticionCambioClave peticion) {
+        cambiarClave.ejecutar(usuario, peticion.claveActual(), peticion.claveNueva());
+        return Map.of("mensaje", catalogo.texto("CLAVE_CAMBIADA"));
     }
 
     @DeleteMapping
