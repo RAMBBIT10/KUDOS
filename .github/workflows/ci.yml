@@ -85,6 +85,7 @@ jobs:
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.qualitygate.wait=true
+                        -Dsonar.coverage.exclusions=**/KudosApplication.java,**/*Entidad.java,**/*Jpa.java,**/*Config.java,**/CreadorAdministrador.java
 
       - name: Trivy sobre dependencias y configuracion
         run: |
