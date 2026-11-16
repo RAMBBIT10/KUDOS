@@ -86,6 +86,7 @@ class FlujoKudoIT {
     @BeforeEach
     void prepararCanalesFalsos() {
         when(catalogoMensajes.texto("MENSAJE_INVALIDO")).thenReturn("El mensaje no es válido");
+        when(catalogoMensajes.texto("TIPO_ARCHIVO_NO_PERMITIDO")).thenReturn("El tipo de archivo no está permitido");
         when(catalogoMensajes.texto("DESTINATARIO_NO_EXISTE")).thenReturn("El destinatario no existe");
         when(catalogoMensajes.texto("SESION_INVALIDA")).thenReturn("Debes iniciar sesión");
         when(catalogoMensajes.texto("SIN_PERMISO")).thenReturn("No tienes permiso para hacer esto");
