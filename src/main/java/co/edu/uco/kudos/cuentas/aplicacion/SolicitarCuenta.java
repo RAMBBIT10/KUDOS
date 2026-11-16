@@ -32,10 +32,10 @@ public class SolicitarCuenta {
             throw new ReglaDeNegocioException("CORREO_INSTITUCIONAL_INVALIDO");
         }
 
-        String telefono = peticion.telefono() == null ? null : peticion.telefono().trim();
-        if (!reglas.telefonoEsValido(telefono)) {
+        if (!reglas.telefonoEsValido(peticion.telefono())) {
             throw new ReglaDeNegocioException("TELEFONO_INVALIDO");
         }
+        String telefono = reglas.normalizarTelefono(peticion.telefono());
 
         if (peticion.rol() == null || peticion.rol() == Rol.ADMINISTRADOR) {
             throw new ReglaDeNegocioException("ROL_INVALIDO");

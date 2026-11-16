@@ -61,7 +61,7 @@
   },
   {
     "codigo": "TELEFONO_INVALIDO",
-    "texto": "El teléfono debe llevar el prefijo del país, por ejemplo +573001234567"
+    "texto": "El teléfono no es válido, escríbelo con 10 números, por ejemplo 3001234567"
   },
   {
     "codigo": "ROL_INVALIDO",

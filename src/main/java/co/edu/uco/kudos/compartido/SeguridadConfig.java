@@ -1,9 +1,7 @@
 package co.edu.uco.kudos.compartido;
 
-import co.edu.uco.kudos.cuentas.aplicacion.puertos.Sesiones;
-import co.edu.uco.kudos.cuentas.infraestructura.FiltroSesion;
-import co.edu.uco.kudos.kudos.aplicacion.puertos.UsuarioRepositorio;
 import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,6 +14,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.Sesiones;
+import co.edu.uco.kudos.cuentas.infraestructura.FiltroSesion;
+import co.edu.uco.kudos.kudos.aplicacion.puertos.UsuarioRepositorio;
 
 @Configuration
 public class SeguridadConfig {
@@ -46,7 +48,7 @@ public class SeguridadConfig {
     }
 
     @Bean
-    CorsConfigurationSource configuracionCors(ConfiguracionKudos configuracion) {
+    CorsConfigurationSource corsConfigurationSource(ConfiguracionKudos configuracion) {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOriginPatterns(configuracion.cors().origenesPermitidos());
         cors.setAllowedMethods(List.of("GET", "POST", "DELETE", "OPTIONS"));

@@ -143,6 +143,7 @@ Están todas en `.env.example`. Ninguna está escrita dentro del código.
 | `STRAPI_BD_*`, `STRAPI_APP_KEYS`, `STRAPI_*_SALT`, `STRAPI_*_SECRET`, `STRAPI_ENCRYPTION_KEY` | Base de datos y secretos del propio Strapi |
 | `ARCHIVOS_CARPETA`, `ARCHIVOS_TAMANO_MAXIMO`, `ARCHIVOS_TIPOS_PERMITIDOS` | Reglas de los adjuntos |
 | `ADMIN_NOMBRE`, `ADMIN_CORREO`, `ADMIN_TELEFONO`, `ADMIN_CLAVE` | Cuenta del administrador, que se crea sola al arrancar; su correo recibe los avisos de solicitudes |
+| `TELEFONO_PREFIJO` | Prefijo del país que el sistema le agrega al teléfono de 10 números que escribe el usuario (por defecto `+57`) |
 | `CORREO_DOMINIOS`, `CORREO_DIGITOS_DOCUMENTO` | Dominios de correo permitidos, separados por coma, y cantidad de dígitos de la cédula en el correo (por defecto `uco.net.co` y 4) |
 | `SESION_SEGUNDOS`, `SESION_PREFIJO` | Vida de la sesión en Redis y prefijo de sus llaves |
 | `CLAVE_TEMPORAL_LONGITUD` | Largo de la clave temporal que se manda al aprobar |
@@ -479,7 +480,7 @@ Terminan en `Test` y no necesitan base de datos. Se corren con `mvn test`.
 | `StrapiClienteTest` | La consulta que se manda a Strapi, la primera fila de la respuesta, vacío si no hay filas y el token solo cuando está configurado |
 | `CatalogoMensajesStrapiTest` | Texto del código, el código mismo si no existe o si Strapi falla, y que la caché evita volver a preguntar |
 | `CatalogoNotificacionesStrapiTest` | Plantilla con asunto y cuerpo, asunto vacío si el canal no lo tiene y error si el canal no tiene plantilla |
-| `ReglasCuentaTest` | Formato del correo institucional (dominio, punto y 4 números), teléfono con prefijo y nombre |
+| `ReglasCuentaTest` | Formato del correo institucional (dominio, punto y 4 números), teléfono de 10 números y nombre |
 | `SolicitarCuentaTest` | Solicitud pendiente con aviso al administrador, correo no institucional, rol administrador y correo repetido |
 | `ResolverSolicitudTest` | Aprobar (clave cifrada y aviso), rechazar, solicitud ya resuelta y solicitud inexistente |
 | `IniciarSesionTest` | Ingreso correcto, sin cuenta, pendiente, rechazada y clave incorrecta |

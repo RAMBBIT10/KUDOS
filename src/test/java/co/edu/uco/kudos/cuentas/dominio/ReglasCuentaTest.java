@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class ReglasCuentaTest {
 
-    private final ReglasCuenta reglas = new ReglasCuenta(List.of("uco.net.co"), 4);
+    private final ReglasCuenta reglas = new ReglasCuenta(List.of("uco.net.co"), 4, "+57");
 
     @Test
     void aceptaElFormatoInstitucional() {
@@ -21,7 +21,7 @@ class ReglasCuentaTest {
 
     @Test
     void aceptaVariosDominiosPermitidos() {
-        ReglasCuenta variosDominios = new ReglasCuenta(List.of("uco.net.co", "gmail.com", "hotmail.com"), 4);
+        ReglasCuenta variosDominios = new ReglasCuenta(List.of("uco.net.co", "gmail.com", "hotmail.com"), 4, "+57");
         assertThat(variosDominios.correoEsValido("diego.vega1234@gmail.com")).isTrue();
         assertThat(variosDominios.correoEsValido("diego.vega1234@hotmail.com")).isTrue();
         assertThat(variosDominios.correoEsValido("diego.vega1234@yahoo.com")).isFalse();
@@ -41,10 +41,19 @@ class ReglasCuentaTest {
     }
 
     @Test
-    void validaTelefonoConPrefijo() {
-        assertThat(reglas.telefonoEsValido("+573001234567")).isTrue();
-        assertThat(reglas.telefonoEsValido("3001234567")).isFalse();
+    void validaTelefonoDeDiezNumeros() {
+        assertThat(reglas.telefonoEsValido("3001234567")).isTrue();
+        assertThat(reglas.telefonoEsValido("300 123-4567")).isTrue();
+        assertThat(reglas.telefonoEsValido("+573001234567")).isFalse();
+        assertThat(reglas.telefonoEsValido("300123456")).isFalse();
+        assertThat(reglas.telefonoEsValido("abc")).isFalse();
         assertThat(reglas.telefonoEsValido(null)).isFalse();
+    }
+
+    @Test
+    void agregaElPrefijoDelPais() {
+        assertThat(reglas.normalizarTelefono("3001234567")).isEqualTo("+573001234567");
+        assertThat(reglas.normalizarTelefono("300 123-4567")).isEqualTo("+573001234567");
     }
 
     @Test
