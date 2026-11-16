@@ -26,37 +26,70 @@ Autor: Diego Alejandro Vega
 
 ## 1. Cómo correrlo
 
+### Cuentas institucionales
+
+En UCO Kudos solo entra gente de la universidad. El correo tiene que ser `primernombre.primerapellido` + los últimos 4 números de la cédula + `@uco.net.co` (por ejemplo `diego.vega1234@uco.net.co`), tanto para estudiantes como para profesores. Los dominios permitidos (uno o varios separados por coma, por ejemplo `uco.net.co,gmail.com,hotmail.com`) y la cantidad de dígitos salen de `CORREO_DOMINIOS` y `CORREO_DIGITOS_DOCUMENTO`.
+
+El flujo es este:
+
+1. Quien no tiene cuenta usa "Solicitar cuenta" (nombre, correo institucional, rol y teléfono). La solicitud queda `PENDIENTE` y al administrador le llega un correo.
+2. El administrador entra al panel y aprueba o rechaza. Al aprobar se crea la cuenta con una clave temporal que le llega a la persona por correo (y por WhatsApp). Al rechazar le llega un correo avisando.
+3. La persona ingresa con correo y clave. La clave se guarda con BCrypt y la sesión es un token opaco guardado en Redis que vence a las `SESION_SEGUNDOS`.
+4. Si intenta ingresar sin cuenta, con la solicitud pendiente o rechazada, la pantalla le dice exactamente cuál de los tres casos es.
+
+La cuenta del administrador se crea sola al arrancar con `ADMIN_NOMBRE`, `ADMIN_CORREO` y `ADMIN_CLAVE`, si todavía no existe.
+
 ### Endpoints
 
-| Método y ruta | Qué hace |
-|---|---|
-| `GET /salud` | Dice si la API está viva |
-| `GET /usuarios` | Lista de usuarios (solo id y nombre) |
-| `POST /usuarios` | Crea un usuario (nombre, correo y teléfono) |
-| `POST /kudos` | Publica un Kudo (multipart: autorId, destinatarioId, mensaje y archivos) |
-| `GET /kudos?destinatarioId=...&limite=10&cursor=...` | Kudos recibidos, con paginación por cursor |
-| `GET /push/{usuarioId}` | Canal de notificaciones en tiempo real (SSE) |
-| `GET /archivos/{nombre}` | Descarga un adjunto |
+| Método y ruta | Quién entra | Qué hace |
+|---|---|---|
+| `GET /salud` | Cualquiera | Dice si la API está viva |
+| `POST /cuentas/solicitudes` | Cualquiera | Pide una cuenta (nombre, correo, teléfono y rol) |
+| `POST /sesion` | Cualquiera | Ingresa con correo y clave, devuelve el token |
+| `GET /sesion` | Con sesión | Datos del usuario que tiene la sesión |
+| `DELETE /sesion` | Con sesión | Cierra la sesión |
+| `GET /cuentas/solicitudes` | Administrador | Solicitudes pendientes |
+| `POST /cuentas/solicitudes/{id}/aprobar` | Administrador | Aprueba y manda la clave temporal |
+| `POST /cuentas/solicitudes/{id}/rechazar` | Administrador | Rechaza y avisa por correo |
+| `GET /usuarios` | Con sesión | Usuarios activos (solo id y nombre) |
+| `POST /kudos` | Con sesión | Publica un Kudo (multipart: destinatarioId, mensaje y archivos); el autor es quien tiene la sesión |
+| `GET /kudos?limite=10&cursor=...` | Con sesión | Kudos recibidos por quien tiene la sesión, con paginación por cursor |
+| `GET /push` | Con sesión | Notificaciones en tiempo real (SSE); el token va en `?token=` porque el navegador no deja mandar cabeceras en un EventSource |
+| `GET /archivos/{nombre}` | Cualquiera | Descarga un adjunto |
+
+Las rutas con sesión llevan la cabecera `Authorization: Bearer TOKEN`.
 
 ### Probar el flujo completo
 
-Primero creo dos usuarios:
+Primero pido una cuenta (el correo tiene que cumplir el formato):
 
 ```
-curl -X POST http://localhost:3000/usuarios -H "Content-Type: application/json" -d "{\"nombre\":\"Ana\",\"correo\":\"ana@uco.edu.co\",\"telefono\":\"+573000000001\"}"
-curl -X POST http://localhost:3000/usuarios -H "Content-Type: application/json" -d "{\"nombre\":\"Luis\",\"correo\":\"luis@uco.edu.co\",\"telefono\":\"+573000000002\"}"
+curl -X POST http://localhost:3000/cuentas/solicitudes -H "Content-Type: application/json" -d "{\"nombre\":\"Ana Gomez\",\"correo\":\"ana.gomez1111@uco.net.co\",\"telefono\":\"+573000000001\",\"rol\":\"ESTUDIANTE\"}"
 ```
 
-Cada respuesta trae un `id`. Con esos ids publico un Kudo con un adjunto:
+Ingreso como administrador (los datos de `ADMIN_CORREO` y `ADMIN_CLAVE` del `.env`) y copio el `token` de la respuesta:
 
 ```
-curl -X POST http://localhost:3000/kudos -F autorId=ID_DE_ANA -F destinatarioId=ID_DE_LUIS -F mensaje="Gracias por ayudarme con el proyecto" -F "archivos=@nota.pdf;type=application/pdf"
+curl -X POST http://localhost:3000/sesion -H "Content-Type: application/json" -d "{\"correo\":\"ADMIN_CORREO\",\"clave\":\"ADMIN_CLAVE\"}"
 ```
 
-Para ver los Kudos de Luis:
+Veo las solicitudes pendientes y apruebo la de Ana con su `id`:
 
 ```
-curl "http://localhost:3000/kudos?destinatarioId=ID_DE_LUIS&limite=10"
+curl http://localhost:3000/cuentas/solicitudes -H "Authorization: Bearer TOKEN_ADMIN"
+curl -X POST http://localhost:3000/cuentas/solicitudes/ID_DE_ANA/aprobar -H "Authorization: Bearer TOKEN_ADMIN"
+```
+
+A Ana le llega la clave temporal por correo. Repito el proceso con un segundo usuario (Luis) y los dos ingresan con `POST /sesion`. Con el token de Ana publico un Kudo para Luis (el `id` de Luis sale de `GET /usuarios`):
+
+```
+curl -X POST http://localhost:3000/kudos -H "Authorization: Bearer TOKEN_ANA" -F destinatarioId=ID_DE_LUIS -F mensaje="Gracias por ayudarme con el proyecto" -F "archivos=@nota.pdf;type=application/pdf"
+```
+
+Para ver los Kudos de Luis uso su token:
+
+```
+curl "http://localhost:3000/kudos?limite=10" -H "Authorization: Bearer TOKEN_LUIS"
 ```
 
 Para ver la auditoría:
@@ -70,7 +103,7 @@ Debe aparecer una fila `KUDO_CREADO` y una fila `NOTIFICACION` por cada canal (c
 Para probar el push dejo este comando abierto en otra terminal antes de publicar:
 
 ```
-curl -N http://localhost:3000/push/ID_DE_LUIS
+curl -N "http://localhost:3000/push?token=TOKEN_LUIS"
 ```
 
 Cuando publico el Kudo para Luis, esa terminal muestra un evento `kudo-recibido`. Si nadie está conectado, el canal push queda como OMITIDO en la auditoría.
@@ -109,6 +142,11 @@ Están todas en `.env.example`. Ninguna está escrita dentro del código.
 | `STRAPI_RUTA_*`, `STRAPI_CAMPO_*` | Rutas y campos de las colecciones de Strapi (tienen valores por defecto) |
 | `STRAPI_BD_*`, `STRAPI_APP_KEYS`, `STRAPI_*_SALT`, `STRAPI_*_SECRET`, `STRAPI_ENCRYPTION_KEY` | Base de datos y secretos del propio Strapi |
 | `ARCHIVOS_CARPETA`, `ARCHIVOS_TAMANO_MAXIMO`, `ARCHIVOS_TIPOS_PERMITIDOS` | Reglas de los adjuntos |
+| `ADMIN_NOMBRE`, `ADMIN_CORREO`, `ADMIN_TELEFONO`, `ADMIN_CLAVE` | Cuenta del administrador, que se crea sola al arrancar; su correo recibe los avisos de solicitudes |
+| `CORREO_DOMINIOS`, `CORREO_DIGITOS_DOCUMENTO` | Dominios de correo permitidos, separados por coma, y cantidad de dígitos de la cédula en el correo (por defecto `uco.net.co` y 4) |
+| `SESION_SEGUNDOS`, `SESION_PREFIJO` | Vida de la sesión en Redis y prefijo de sus llaves |
+| `CLAVE_TEMPORAL_LONGITUD` | Largo de la clave temporal que se manda al aprobar |
+| `PLANTILLA_SOLICITUD`, `PLANTILLA_APROBADA`, `PLANTILLA_RECHAZADA`, `PLANTILLA_APROBADA_WHATSAPP` | Nombres de las plantillas de cuentas en Strapi (tienen valores por defecto) |
 | `CACHE_SEGUNDOS` | Vida de la caché |
 | `CORS_ORIGENES` | Orígenes permitidos (en producción, el dominio del frontend) |
 | `COLA_NOMBRE`, `COLA_INTENTOS`, `COLA_ESPERA_BASE`, `COLA_CANALES` | Cola de notificaciones (tienen valores por defecto) |
@@ -241,10 +279,11 @@ Primero definí qué se necesita (ABB) y después con qué lo resolví (SBB).
 | ABB-07 Auditoría | Módulo `auditoria`, tabla `auditoria` | Hecho |
 | ABB-08 Mensajería asíncrona | Lista de Redis como cola | Hecho |
 | ABB-09 Caché | Redis, `CacheKudosRedis` | Hecho |
-| ABB-10 Identidad y acceso | JWT con Spring Security | Pendiente |
+| ABB-10 Identidad y acceso | Cuentas institucionales aprobadas por el administrador, BCrypt, sesión en Redis y Spring Security | Hecho |
 | ABB-11 Observabilidad | Endpoint `/salud`, auditoría | Parcial |
 | ABB-13 Catálogos de mensajes y notificaciones | Módulo `catalogos` consumiendo Strapi (CMS) | Hecho |
 | ABB-12 Entrega continua | GitHub Actions, SonarCloud, Trivy | Archivos listos, falta ejecutarlos |
+| ABB-14 Baúl de secretos | Azure Key Vault, leído por los App Service con referencias; en local, `.env` | Pendiente (Azure) |
 
 ---
 
@@ -302,7 +341,7 @@ Puertos principales: `KudoRepositorio`, `UsuarioRepositorio`, `AuditoriaReposito
 
 | Tabla | Campos |
 |---|---|
-| usuario | id, nombre, correo, telefono |
+| usuario | id, nombre, correo, telefono, rol (ESTUDIANTE, PROFESOR, ADMINISTRADOR), estado (PENDIENTE, ACTIVO, RECHAZADO), claveCifrada (BCrypt) |
 | kudo | id, autorId, destinatarioId, mensaje, creadoEn |
 | adjunto | id, nombre, tipo, tamano, url, kudo |
 | auditoria | id, kudoId, evento, canal, estado, detalle, creadoEn |
@@ -421,8 +460,8 @@ Tengo muchas pruebas rápidas abajo, algunas de integración en el medio y pocas
 
 | Nivel | Qué prueba | Herramienta | Cantidad | Estado |
 |---|---|---|---|---|
-| Unitarias | Casos de uso, reglas del dominio, push y catálogos (con un Strapi falso en memoria) | JUnit 5 y Mockito | 38 | Las 23 de antes pasan; las 15 del catálogo se corren con `mvn test` |
-| Integración | La API completa con Postgres y Redis reales | Spring Boot Test y MockMvc | 7 | Escritas, falta registrar su ejecución |
+| Unitarias | Casos de uso, reglas del dominio, cuentas, push y catálogos (con un Strapi falso en memoria) | JUnit 5 y Mockito | 57 | Por correr con `mvn test` después de los cambios de cuentas |
+| Integración | La API completa con Postgres y Redis reales | Spring Boot Test y MockMvc | 11 | Escritas, falta registrar su ejecución |
 | Extremo a extremo | Flujo completo desde el frontend | Pendiente | 0 | Pendiente |
 
 ### Unitarias
@@ -440,20 +479,28 @@ Terminan en `Test` y no necesitan base de datos. Se corren con `mvn test`.
 | `StrapiClienteTest` | La consulta que se manda a Strapi, la primera fila de la respuesta, vacío si no hay filas y el token solo cuando está configurado |
 | `CatalogoMensajesStrapiTest` | Texto del código, el código mismo si no existe o si Strapi falla, y que la caché evita volver a preguntar |
 | `CatalogoNotificacionesStrapiTest` | Plantilla con asunto y cuerpo, asunto vacío si el canal no lo tiene y error si el canal no tiene plantilla |
+| `ReglasCuentaTest` | Formato del correo institucional (dominio, punto y 4 números), teléfono con prefijo y nombre |
+| `SolicitarCuentaTest` | Solicitud pendiente con aviso al administrador, correo no institucional, rol administrador y correo repetido |
+| `ResolverSolicitudTest` | Aprobar (clave cifrada y aviso), rechazar, solicitud ya resuelta y solicitud inexistente |
+| `IniciarSesionTest` | Ingreso correcto, sin cuenta, pendiente, rechazada y clave incorrecta |
 | `ManejadorDeErroresTest` | Que cada error responda con el estado correcto y el texto sacado del catálogo |
 
 ### Integración
 
-Terminan en `IT` y están en `FlujoKudoIT`. Levantan la aplicación completa contra Postgres y Redis reales; solo reemplazo los proveedores externos (correo, WhatsApp y el catálogo de mensajes). Se corren con `mvn verify`, con Postgres y Redis arriba y las variables de `.env` cargadas.
+Terminan en `IT` y están en `FlujoKudoIT`. Levantan la aplicación completa contra Postgres y Redis reales; solo reemplazo los proveedores externos (correo, WhatsApp, los avisos de cuentas y el catálogo de mensajes). Se corren con `mvn verify`, con Postgres y Redis arriba y las variables de `.env` cargadas.
 
 | Prueba | Qué comprueba |
 |---|---|
-| Publicar con adjunto | Guarda el Kudo y el adjunto, y la auditoría tiene `KUDO_CREADO` y una fila por cada canal |
+| Publicar con adjunto | Con sesión, guarda el Kudo y el adjunto, y la auditoría tiene `KUDO_CREADO` y una fila por cada canal |
 | Paginación por cursor | Primera página con 2 Kudos y siguiente cursor; segunda página con el último y sin cursor |
 | Caché | Un Kudo nuevo aparece aunque la lista ya estuviera cacheada (se invalida) |
 | Mensaje vacío | Responde 400 |
 | Archivo no permitido | Un `.exe` se rechaza con 400 |
 | Destinatario inexistente | Responde 404 |
+| Sin sesión | Publicar sin token responde 401 con el texto del catálogo |
+| Panel de solicitudes | Un estudiante recibe 403 y el administrador 200 |
+| Aprobar solicitud | Pendiente no puede ingresar; el administrador aprueba y la cuenta queda activa |
+| Cuenta inexistente | Ingresar con un correo sin cuenta responde 404 con su mensaje |
 | Salud | `GET /salud` responde `ok` |
 
 ### Comandos
@@ -465,7 +512,7 @@ Terminan en `IT` y están en `FlujoKudoIT`. Levantan la aplicación completa con
 
 ### Falta
 
-- Registrar la ejecución de las 45 pruebas y la cobertura en el CI.
+- Registrar la ejecución de las 68 pruebas y la cobertura en el CI.
 - Prueba de extremo a extremo con el frontend.
 - Probar las notificaciones contra el sandbox real de Twilio y un SMTP real.
 
@@ -482,12 +529,16 @@ Terminan en `IT` y están en `FlujoKudoIT`. Levantan la aplicación completa con
 | Límite de tamaño, de cantidad y lista de tipos permitidos en adjuntos | `AlmacenArchivos` |
 | Archivos guardados con nombre aleatorio | `AlmacenArchivos` |
 | Cabeceras de seguridad y sesión sin estado | Spring Security (`SeguridadConfig`) |
+| Solo entran cuentas institucionales aprobadas por el administrador | `SolicitarCuenta`, `ResolverSolicitud` y `ReglasCuenta` |
+| Claves guardadas con BCrypt y claves temporales aleatorias (`SecureRandom`) | `CifradorClavesBcrypt` y `GeneradorClavesSeguras` |
+| Sesión con token aleatorio en Redis que vence solo; rutas por rol | `SesionesRedis`, `FiltroSesion` y `SeguridadConfig` |
+| El autor del Kudo sale de la sesión, no del cuerpo de la petición | `KudosControlador` |
 | Secretos fuera del código y del repositorio | Variables de entorno, `.env` en `.gitignore` |
 | Mensajes de error sin detalles internos | `ManejadorDeErrores` |
 | Usuario sin privilegios dentro del contenedor | `Dockerfile` (`USER kudos`) |
 | Imagen final solo con el JRE y el JAR | `Dockerfile` en dos etapas |
 
-Falta: autenticación con JWT (hoy el autor viaja en el cuerpo de la petición), límite de peticiones por usuario, CORS restringido al dominio del frontend y no devolver correo ni teléfono en las respuestas públicas.
+Falta: límite de intentos de ingreso y de peticiones por usuario, forzar el cambio de la clave temporal y CORS restringido al dominio del frontend en producción.
 
 ### Integración continua (CI)
 
@@ -503,6 +554,8 @@ Archivo `.github/workflows/ci.yml`. Se ejecuta en cada push y pull request a `ma
 | Vulnerabilidades en la imagen | Trivy (modo imagen) | Hay vulnerabilidades críticas o altas con arreglo disponible |
 
 Los reportes de cobertura y de Trivy se guardan como artefactos de cada ejecución.
+
+Trivy corre desde la imagen oficial `aquasec/trivy:0.69.3` y no desde la acción `trivy-action`: en marzo de 2026 las etiquetas de esa acción fueron comprometidas y las versiones viejas se borraron, así que el pipeline fija una versión conocida y limpia del escáner.
 
 ### Entrega continua (CD)
 

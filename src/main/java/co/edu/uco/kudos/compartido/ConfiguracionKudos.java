@@ -56,7 +56,7 @@ public record ConfiguracionKudos(
     }
 
     public record Cuentas(
-            String dominioCorreo,
+            List<String> dominiosCorreo,
             int digitosDocumento,
             int longitudClaveTemporal,
             int segundosDeSesion,

@@ -17,6 +17,7 @@ import co.edu.uco.kudos.kudos.aplicacion.puertos.UsuarioRepositorio;
 import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
 import co.edu.uco.kudos.kudos.dominio.Rol;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class SolicitarCuentaTest {
 
     private final UsuarioRepositorio usuarios = mock(UsuarioRepositorio.class);
     private final AvisosDeCuenta avisos = mock(AvisosDeCuenta.class);
-    private final SolicitarCuenta casoDeUso = new SolicitarCuenta(usuarios, new ReglasCuenta("uco.net.co", 4), avisos);
+    private final SolicitarCuenta casoDeUso = new SolicitarCuenta(usuarios, new ReglasCuenta(List.of("uco.net.co"), 4), avisos);
 
     private PeticionSolicitudCuenta peticion(String correo, Rol rol) {
         return new PeticionSolicitudCuenta("Diego Vega", correo, "+573001234567", rol);

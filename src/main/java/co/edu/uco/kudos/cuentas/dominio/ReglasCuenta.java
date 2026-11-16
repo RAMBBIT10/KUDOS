@@ -1,6 +1,8 @@
 package co.edu.uco.kudos.cuentas.dominio;
 
+import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ReglasCuenta {
 
@@ -9,9 +11,13 @@ public class ReglasCuenta {
 
     private final Pattern correoInstitucional;
 
-    public ReglasCuenta(String dominio, int digitosDocumento) {
+    public ReglasCuenta(List<String> dominios, int digitosDocumento) {
+        String dominiosPermitidos = dominios.stream()
+                .map(String::trim)
+                .map(Pattern::quote)
+                .collect(Collectors.joining("|"));
         this.correoInstitucional = Pattern.compile(
-                "^[a-z]+\\.[a-z]+[0-9]{" + digitosDocumento + "}@" + Pattern.quote(dominio) + "$");
+                "^[a-z]+\\.[a-z]+[0-9]{" + digitosDocumento + "}@(" + dominiosPermitidos + ")$");
     }
 
     public boolean correoEsValido(String correo) {

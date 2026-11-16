@@ -2,11 +2,12 @@ package co.edu.uco.kudos.cuentas.dominio;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ReglasCuentaTest {
 
-    private final ReglasCuenta reglas = new ReglasCuenta("uco.net.co", 4);
+    private final ReglasCuenta reglas = new ReglasCuenta(List.of("uco.net.co"), 4);
 
     @Test
     void aceptaElFormatoInstitucional() {
@@ -16,6 +17,14 @@ class ReglasCuentaTest {
     @Test
     void rechazaCorreosDeOtroDominio() {
         assertThat(reglas.correoEsValido("diego.vega1234@gmail.com")).isFalse();
+    }
+
+    @Test
+    void aceptaVariosDominiosPermitidos() {
+        ReglasCuenta variosDominios = new ReglasCuenta(List.of("uco.net.co", "gmail.com", "hotmail.com"), 4);
+        assertThat(variosDominios.correoEsValido("diego.vega1234@gmail.com")).isTrue();
+        assertThat(variosDominios.correoEsValido("diego.vega1234@hotmail.com")).isTrue();
+        assertThat(variosDominios.correoEsValido("diego.vega1234@yahoo.com")).isFalse();
     }
 
     @Test

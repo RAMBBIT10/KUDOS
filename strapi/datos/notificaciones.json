@@ -7,5 +7,24 @@
   {
     "canal": "whatsapp",
     "cuerpo": "Hola {nombre}, recibiste un Kudo: {mensaje}"
+  },
+  {
+    "canal": "cuenta-solicitud",
+    "asunto": "Nueva solicitud de cuenta en UCO Kudos",
+    "cuerpo": "Hola, {nombre} ({correo}) pidió una cuenta como {rol}.\n\nEntra al panel de administración para aprobarla o rechazarla."
+  },
+  {
+    "canal": "cuenta-aprobada",
+    "asunto": "Tu cuenta de UCO Kudos fue aprobada",
+    "cuerpo": "Hola {nombre}, tu solicitud fue aprobada.\n\nCorreo: {correo}\nClave temporal: {clave}\n\nIngresa con esos datos."
+  },
+  {
+    "canal": "cuenta-rechazada",
+    "asunto": "Tu solicitud en UCO Kudos",
+    "cuerpo": "Hola {nombre}, tu solicitud de cuenta no fue aprobada. Si crees que es un error, comunícate con el administrador."
+  },
+  {
+    "canal": "cuenta-aprobada-whatsapp",
+    "cuerpo": "Hola {nombre}, tu cuenta de UCO Kudos fue aprobada. Ingresa con {correo} y la clave temporal {clave}"
   }
 ]
