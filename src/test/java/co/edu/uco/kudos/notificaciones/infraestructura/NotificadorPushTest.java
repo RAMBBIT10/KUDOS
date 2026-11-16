@@ -73,4 +73,24 @@ class NotificadorPushTest {
 
         assertThat(conexionesReales.estaConectado(destinatarioId)).isTrue();
     }
+
+    @Test
+    void enviarAlUsuarioNoFallaConCanalesRegistradosNiSinEllos() {
+        ConexionesPush conexionesReales = new ConexionesPush();
+
+        conexionesReales.enviarAlUsuario(destinatarioId, "kudo-recibido", "nada");
+        conexionesReales.registrar(destinatarioId);
+        conexionesReales.enviarAlUsuario(destinatarioId, "kudo-recibido", "dato");
+
+        assertThat(conexionesReales.estaConectado(destinatarioId)).isTrue();
+    }
+
+    @Test
+    void retirarUnUsuarioQueNoExisteNoHaceNada() {
+        ConexionesPush conexionesReales = new ConexionesPush();
+
+        conexionesReales.retirar(destinatarioId, new SseEmitter());
+
+        assertThat(conexionesReales.estaConectado(destinatarioId)).isFalse();
+    }
 }
