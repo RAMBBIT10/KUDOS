@@ -1,35 +1,17 @@
 package co.edu.uco.kudos.integracion;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import co.edu.uco.kudos.auditoria.AuditoriaEntidad;
-import co.edu.uco.kudos.auditoria.AuditoriaJpa;
-import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
-import co.edu.uco.kudos.cuentas.aplicacion.puertos.AvisosDeCuenta;
-import co.edu.uco.kudos.cuentas.aplicacion.puertos.CifradorClaves;
-import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
-import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioEntidad;
-import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioJpa;
-import co.edu.uco.kudos.kudos.dominio.EstadoAuditoria;
-import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
-import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorCorreo;
-import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorWhatsapp;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -39,8 +21,32 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import co.edu.uco.kudos.auditoria.AuditoriaEntidad;
+import co.edu.uco.kudos.auditoria.AuditoriaJpa;
+import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.AvisosDeCuenta;
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.CifradorClaves;
+import co.edu.uco.kudos.kudos.dominio.EstadoAuditoria;
+import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
+import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioEntidad;
+import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioJpa;
+import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
+import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorCorreo;
+import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorWhatsapp;
+
+@SpringBootTest(properties = {
+        "kudos.cuentas.administrador-nombre=Administrador de prueba",
+        "kudos.cuentas.administrador-correo=admin.prueba0000@uco.net.co",
+        "kudos.cuentas.administrador-clave=clave_admin_de_prueba"
+})
 @AutoConfigureMockMvc
 class FlujoKudoIT {
 
