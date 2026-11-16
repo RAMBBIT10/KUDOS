@@ -1,9 +1,9 @@
 package co.edu.uco.kudos.notificaciones.infraestructura;
 
-import java.util.UUID;
+import co.edu.uco.kudos.kudos.dominio.Usuario;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -16,8 +16,8 @@ public class PushControlador {
         this.conexiones = conexiones;
     }
 
-    @GetMapping(path = "/push/{usuarioId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter conectar(@PathVariable UUID usuarioId) {
-        return conexiones.registrar(usuarioId);
+    @GetMapping(path = "/push", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter conectar(@AuthenticationPrincipal Usuario usuario) {
+        return conexiones.registrar(usuario.id());
     }
 }

@@ -1,11 +1,15 @@
 package co.edu.uco.kudos.compartido;
 
 import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
+import co.edu.uco.kudos.kudos.aplicacion.NoAutorizadoException;
 import co.edu.uco.kudos.kudos.aplicacion.NoEncontradoException;
+import co.edu.uco.kudos.kudos.aplicacion.ProhibidoException;
 import co.edu.uco.kudos.kudos.aplicacion.ReglaDeNegocioException;
+import co.edu.uco.kudos.kudos.aplicacion.ServicioExternoException;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -33,7 +37,8 @@ public class ManejadorDeErrores {
             MissingServletRequestParameterException.class,
             MissingServletRequestPartException.class,
             MaxUploadSizeExceededException.class,
-            HttpMediaTypeNotSupportedException.class
+            HttpMediaTypeNotSupportedException.class,
+            HttpMessageNotReadableException.class
     })
     ResponseEntity<Map<String, String>> peticionInvalida(Exception error) {
         return responder(HttpStatus.BAD_REQUEST, mensajeSeguro(error));
@@ -42,6 +47,21 @@ public class ManejadorDeErrores {
     @ExceptionHandler(NoEncontradoException.class)
     ResponseEntity<Map<String, String>> noEncontrado(NoEncontradoException error) {
         return responder(HttpStatus.NOT_FOUND, catalogo.texto(error.getMessage()));
+    }
+
+    @ExceptionHandler(NoAutorizadoException.class)
+    ResponseEntity<Map<String, String>> noAutorizado(NoAutorizadoException error) {
+        return responder(HttpStatus.UNAUTHORIZED, catalogo.texto(error.getMessage()));
+    }
+
+    @ExceptionHandler(ProhibidoException.class)
+    ResponseEntity<Map<String, String>> prohibido(ProhibidoException error) {
+        return responder(HttpStatus.FORBIDDEN, catalogo.texto(error.getMessage()));
+    }
+
+    @ExceptionHandler(ServicioExternoException.class)
+    ResponseEntity<Map<String, String>> servicioExterno(ServicioExternoException error) {
+        return responder(HttpStatus.BAD_GATEWAY, catalogo.texto(error.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

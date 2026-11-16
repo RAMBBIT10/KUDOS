@@ -7,26 +7,19 @@ import co.edu.uco.kudos.kudos.dominio.Kudo;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
 import co.edu.uco.kudos.notificaciones.aplicacion.Notificador;
 import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 @Component
 public class NotificadorCorreo implements Notificador {
 
-    private final JavaMailSender enviadorDeCorreo;
-    private final String remitente;
-    private final String canal;
+    private final EnviadorCorreo enviador;
     private final CatalogoNotificaciones catalogo;
+    private final String canal;
 
-    public NotificadorCorreo(
-            JavaMailSender enviadorDeCorreo,
-            ConfiguracionKudos configuracion,
-            CatalogoNotificaciones catalogo) {
-        this.enviadorDeCorreo = enviadorDeCorreo;
-        this.remitente = configuracion.correo().remitente();
-        this.canal = configuracion.canales().correo();
+    public NotificadorCorreo(EnviadorCorreo enviador, CatalogoNotificaciones catalogo, ConfiguracionKudos configuracion) {
+        this.enviador = enviador;
         this.catalogo = catalogo;
+        this.canal = configuracion.canales().correo();
     }
 
     @Override
@@ -37,12 +30,10 @@ public class NotificadorCorreo implements Notificador {
     @Override
     public ResultadoEnvio enviar(Usuario destinatario, Kudo kudo) {
         PlantillaNotificacion plantilla = catalogo.plantilla(canal());
-        SimpleMailMessage mensaje = new SimpleMailMessage();
-        mensaje.setFrom(remitente);
-        mensaje.setTo(destinatario.correo());
-        mensaje.setSubject(plantilla.asunto());
-        mensaje.setText(plantilla.cuerpoPara(destinatario.nombre(), kudo.mensaje()));
-        enviadorDeCorreo.send(mensaje);
+        enviador.enviar(
+                destinatario.correo(),
+                plantilla.asunto(),
+                plantilla.cuerpoPara(destinatario.nombre(), kudo.mensaje()));
         return ResultadoEnvio.ENVIADO;
     }
 }

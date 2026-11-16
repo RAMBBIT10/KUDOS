@@ -1,7 +1,11 @@
 package co.edu.uco.kudos.kudos.infraestructura.persistencia;
 
+import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
+import co.edu.uco.kudos.kudos.dominio.Rol;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,6 +28,17 @@ public class UsuarioEntidad {
 
     @Column(nullable = false)
     private String telefono;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private Rol rol;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private EstadoCuenta estado;
+
+    @Column(name = "clave_cifrada")
+    private String claveCifrada;
 
     public UUID getId() {
         return id;
@@ -51,5 +66,29 @@ public class UsuarioEntidad {
 
     public void setTelefono(String telefono) {
         this.telefono = telefono;
+    }
+
+    public Rol getRol() {
+        return rol;
+    }
+
+    public void setRol(Rol rol) {
+        this.rol = rol;
+    }
+
+    public EstadoCuenta getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoCuenta estado) {
+        this.estado = estado;
+    }
+
+    public String getClaveCifrada() {
+        return claveCifrada;
+    }
+
+    public void setClaveCifrada(String claveCifrada) {
+        this.claveCifrada = claveCifrada;
     }
 }

@@ -5,10 +5,12 @@ import co.edu.uco.kudos.kudos.aplicacion.PeticionPublicarKudo;
 import co.edu.uco.kudos.kudos.aplicacion.PublicarKudo;
 import co.edu.uco.kudos.kudos.aplicacion.RespuestaListaKudos;
 import co.edu.uco.kudos.kudos.dominio.Kudo;
+import co.edu.uco.kudos.kudos.dominio.Usuario;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,20 +39,20 @@ public class KudosControlador {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public Kudo publicar(
-            @RequestParam UUID autorId,
+            @AuthenticationPrincipal Usuario autor,
             @RequestParam UUID destinatarioId,
             @RequestParam String mensaje,
             @RequestParam(name = "archivos", required = false) List<MultipartFile> archivos) {
         var adjuntos = almacenArchivos.guardar(archivos);
-        return publicarKudo.ejecutar(new PeticionPublicarKudo(autorId, destinatarioId, mensaje, adjuntos));
+        return publicarKudo.ejecutar(new PeticionPublicarKudo(autor.id(), destinatarioId, mensaje, adjuntos));
     }
 
     @GetMapping
     public RespuestaListaKudos listar(
-            @RequestParam UUID destinatarioId,
+            @AuthenticationPrincipal Usuario usuario,
             @RequestParam(defaultValue = "10") int limite,
             @RequestParam(required = false) String cursor) {
         int limiteAjustado = Math.min(Math.max(limite, LIMITE_MINIMO), LIMITE_MAXIMO);
-        return listarKudos.ejecutar(destinatarioId, limiteAjustado, cursor);
+        return listarKudos.ejecutar(usuario.id(), limiteAjustado, cursor);
     }
 }

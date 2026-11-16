@@ -9,6 +9,7 @@ import co.edu.uco.kudos.kudos.dominio.DatosNuevoKudo;
 import co.edu.uco.kudos.kudos.dominio.EstadoAuditoria;
 import co.edu.uco.kudos.kudos.dominio.Kudo;
 import co.edu.uco.kudos.kudos.dominio.ReglasMensaje;
+import co.edu.uco.kudos.kudos.dominio.Usuario;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -41,6 +42,7 @@ public class PublicarKudo {
         usuarios.buscarPorId(peticion.autorId())
                 .orElseThrow(() -> new NoEncontradoException("AUTOR_NO_EXISTE"));
         usuarios.buscarPorId(peticion.destinatarioId())
+                .filter(Usuario::estaActivo)
                 .orElseThrow(() -> new NoEncontradoException("DESTINATARIO_NO_EXISTE"));
 
         Kudo kudo = kudos.guardar(new DatosNuevoKudo(

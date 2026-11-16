@@ -13,6 +13,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import co.edu.uco.kudos.auditoria.AuditoriaEntidad;
 import co.edu.uco.kudos.auditoria.AuditoriaJpa;
 import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.AvisosDeCuenta;
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.CifradorClaves;
+import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
+import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioEntidad;
+import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioJpa;
 import co.edu.uco.kudos.kudos.dominio.EstadoAuditoria;
 import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
 import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorCorreo;
@@ -21,10 +26,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -55,39 +62,77 @@ class FlujoKudoIT {
     @MockBean
     private CatalogoMensajes catalogoMensajes;
 
+    @MockBean
+    private AvisosDeCuenta avisos;
+
+    @Autowired
+    private UsuarioJpa usuarios;
+
+    @Autowired
+    private CifradorClaves cifrador;
+
+    @Value("${kudos.cuentas.administrador-correo}")
+    private String correoAdmin;
+
+    @Value("${kudos.cuentas.administrador-clave}")
+    private String claveAdmin;
+
     @BeforeEach
     void prepararCanalesFalsos() {
         when(catalogoMensajes.texto("MENSAJE_INVALIDO")).thenReturn("El mensaje no es válido");
         when(catalogoMensajes.texto("DESTINATARIO_NO_EXISTE")).thenReturn("El destinatario no existe");
+        when(catalogoMensajes.texto("SESION_INVALIDA")).thenReturn("Debes iniciar sesión");
+        when(catalogoMensajes.texto("SIN_PERMISO")).thenReturn("No tienes permiso para hacer esto");
+        when(catalogoMensajes.texto("SOLICITUD_ENVIADA")).thenReturn("Tu solicitud fue enviada");
+        when(catalogoMensajes.texto("CUENTA_APROBADA")).thenReturn("Cuenta aprobada");
+        when(catalogoMensajes.texto("SOLICITUD_PENDIENTE")).thenReturn("Tu solicitud sigue pendiente de aprobación");
+        when(catalogoMensajes.texto("CUENTA_NO_EXISTE"))
+                .thenReturn("No encontramos una cuenta con ese correo. Puedes solicitarla");
         when(correo.canal()).thenReturn("correo");
         when(correo.enviar(any(), any())).thenReturn(ResultadoEnvio.ENVIADO);
         when(whatsapp.canal()).thenReturn("whatsapp");
         when(whatsapp.enviar(any(), any())).thenReturn(ResultadoEnvio.ENVIADO);
     }
 
-    private UUID crearUsuario(String nombre, String telefono) throws Exception {
-        String correoUnico = nombre.toLowerCase() + "-" + System.nanoTime() + "@uco.edu.co";
-        String cuerpo = convertidorJson.writeValueAsString(
-                Map.of("nombre", nombre, "correo", correoUnico, "telefono", telefono));
+    private final AtomicInteger contador = new AtomicInteger(1000);
 
-        String respuesta = mockMvc.perform(post("/usuarios").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
-                .andExpect(status().isCreated())
+    private record Sesion(UUID id, String token) {
+    }
+
+    private String ingresar(String correo, String clave) throws Exception {
+        String cuerpo = convertidorJson.writeValueAsString(Map.of("correo", correo, "clave", clave));
+        String respuesta = mockMvc.perform(post("/sesion").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-
-        return UUID.fromString(convertidorJson.readTree(respuesta).get("id").asText());
+        return convertidorJson.readTree(respuesta).get("token").asText();
     }
 
-    private MockMultipartHttpServletRequestBuilder armarPublicacion(UUID autorId, UUID destinatarioId, String mensaje) {
+    private Sesion crearUsuario(String nombre, String telefono) throws Exception {
+        String correoUnico = nombre.toLowerCase() + "." + "prueba" + contador.incrementAndGet() + "@uco.net.co";
+        String cuerpo = convertidorJson.writeValueAsString(
+                Map.of("nombre", nombre, "correo", correoUnico, "telefono", telefono, "rol", "ESTUDIANTE"));
+        mockMvc.perform(post("/cuentas/solicitudes").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isCreated());
+
+        UsuarioEntidad pendiente = usuarios.findByCorreo(correoUnico).orElseThrow();
+        pendiente.setEstado(EstadoCuenta.ACTIVO);
+        pendiente.setClaveCifrada(cifrador.cifrar("ClaveDePrueba1"));
+        usuarios.saveAndFlush(pendiente);
+
+        return new Sesion(pendiente.getId(), ingresar(correoUnico, "ClaveDePrueba1"));
+    }
+
+    private MockMultipartHttpServletRequestBuilder armarPublicacion(Sesion autor, UUID destinatarioId, String mensaje) {
         return (MockMultipartHttpServletRequestBuilder) multipart("/kudos")
-                .param("autorId", autorId.toString())
+                .header("Authorization", "Bearer " + autor.token())
                 .param("destinatarioId", destinatarioId.toString())
                 .param("mensaje", mensaje);
     }
 
-    private UUID publicar(UUID autorId, UUID destinatarioId, String mensaje) throws Exception {
-        String respuesta = mockMvc.perform(armarPublicacion(autorId, destinatarioId, mensaje))
+    private UUID publicar(Sesion autor, UUID destinatarioId, String mensaje) throws Exception {
+        String respuesta = mockMvc.perform(armarPublicacion(autor, destinatarioId, mensaje))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -109,13 +154,13 @@ class FlujoKudoIT {
 
     @Test
     void publicaUnKudoConAdjuntoLoGuardaNotificaPorLosTresCanalesYAudita() throws Exception {
-        UUID autorId = crearUsuario("Ana", "+573000000001");
-        UUID destinatarioId = crearUsuario("Luis", "+573000000002");
+        Sesion autor = crearUsuario("Ana", "+573000000001");
+        Sesion destinatario = crearUsuario("Luis", "+573000000002");
         MockMultipartFile adjunto = new MockMultipartFile(
                 "archivos", "nota.pdf", "application/pdf", "contenido de prueba".getBytes());
 
         String respuesta = mockMvc.perform(
-                        armarPublicacion(autorId, destinatarioId, "Gracias por ayudarme con el proyecto").file(adjunto))
+                        armarPublicacion(autor, destinatario.id(), "Gracias por ayudarme con el proyecto").file(adjunto))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.adjuntos.length()").value(1))
                 .andExpect(jsonPath("$.adjuntos[0].nombre").value("nota.pdf"))
@@ -137,16 +182,16 @@ class FlujoKudoIT {
     }
 
     @Test
-    void listaLosKudosDelDestinatarioConPaginacionPorCursor() throws Exception {
-        UUID autorId = crearUsuario("Carlos", "+573000000003");
-        UUID destinatarioId = crearUsuario("Marta", "+573000000004");
+    void listaSoloLosKudosDelUsuarioConSesionConPaginacionPorCursor() throws Exception {
+        Sesion autor = crearUsuario("Carlos", "+573000000003");
+        Sesion destinatario = crearUsuario("Marta", "+573000000004");
         for (int numero = 1; numero <= 3; numero++) {
-            publicar(autorId, destinatarioId, "Kudo numero " + numero);
+            publicar(autor, destinatario.id(), "Kudo numero " + numero);
             Thread.sleep(30);
         }
 
         String primera = mockMvc.perform(get("/kudos")
-                        .param("destinatarioId", destinatarioId.toString())
+                        .header("Authorization", "Bearer " + destinatario.token())
                         .param("limite", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.kudos.length()").value(2))
@@ -157,7 +202,7 @@ class FlujoKudoIT {
         String cursor = convertidorJson.readTree(primera).get("siguienteCursor").asText();
 
         mockMvc.perform(get("/kudos")
-                        .param("destinatarioId", destinatarioId.toString())
+                        .header("Authorization", "Bearer " + destinatario.token())
                         .param("limite", "2")
                         .param("cursor", cursor))
                 .andExpect(status().isOk())
@@ -168,48 +213,102 @@ class FlujoKudoIT {
 
     @Test
     void muestraElKudoNuevoAunqueLaListaYaEstuvieraEnCache() throws Exception {
-        UUID autorId = crearUsuario("Pedro", "+573000000005");
-        UUID destinatarioId = crearUsuario("Sofia", "+573000000006");
+        Sesion autor = crearUsuario("Pedro", "+573000000005");
+        Sesion destinatario = crearUsuario("Sofia", "+573000000006");
 
-        mockMvc.perform(get("/kudos").param("destinatarioId", destinatarioId.toString()))
+        mockMvc.perform(get("/kudos").header("Authorization", "Bearer " + destinatario.token()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.kudos.length()").value(0));
 
-        publicar(autorId, destinatarioId, "Excelente trabajo");
+        publicar(autor, destinatario.id(), "Excelente trabajo");
 
-        mockMvc.perform(get("/kudos").param("destinatarioId", destinatarioId.toString()))
+        mockMvc.perform(get("/kudos").header("Authorization", "Bearer " + destinatario.token()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.kudos.length()").value(1));
     }
 
     @Test
     void rechazaUnMensajeVacio() throws Exception {
-        UUID autorId = crearUsuario("Ines", "+573000000007");
-        UUID destinatarioId = crearUsuario("Jorge", "+573000000008");
+        Sesion autor = crearUsuario("Ines", "+573000000007");
+        Sesion destinatario = crearUsuario("Jorge", "+573000000008");
 
-        mockMvc.perform(armarPublicacion(autorId, destinatarioId, ""))
+        mockMvc.perform(armarPublicacion(autor, destinatario.id(), ""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje").value("El mensaje no es válido"));
     }
 
     @Test
     void rechazaUnArchivoDeUnTipoNoPermitido() throws Exception {
-        UUID autorId = crearUsuario("Rosa", "+573000000009");
-        UUID destinatarioId = crearUsuario("Tomas", "+573000000010");
+        Sesion autor = crearUsuario("Rosa", "+573000000009");
+        Sesion destinatario = crearUsuario("Tomas", "+573000000010");
         MockMultipartFile peligroso = new MockMultipartFile(
                 "archivos", "virus.exe", "application/x-msdownload", "MZ".getBytes());
 
-        mockMvc.perform(armarPublicacion(autorId, destinatarioId, "Con archivo peligroso").file(peligroso))
+        mockMvc.perform(armarPublicacion(autor, destinatario.id(), "Con archivo peligroso").file(peligroso))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void respondeNoEncontradoSiElDestinatarioNoExiste() throws Exception {
-        UUID autorId = crearUsuario("Elena", "+573000000011");
+        Sesion autor = crearUsuario("Elena", "+573000000011");
 
-        mockMvc.perform(armarPublicacion(autorId, UUID.randomUUID(), "Hola"))
+        mockMvc.perform(armarPublicacion(autor, UUID.randomUUID(), "Hola"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.mensaje").value("El destinatario no existe"));
+    }
+
+    @Test
+    void noDejaPublicarSinSesion() throws Exception {
+        mockMvc.perform(multipart("/kudos")
+                        .param("destinatarioId", UUID.randomUUID().toString())
+                        .param("mensaje", "Hola"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.mensaje").value("Debes iniciar sesión"));
+    }
+
+    @Test
+    void elPanelDeSolicitudesSoloLoVeElAdministrador() throws Exception {
+        Sesion estudiante = crearUsuario("Nora", "+573000000012");
+
+        mockMvc.perform(get("/cuentas/solicitudes").header("Authorization", "Bearer " + estudiante.token()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensaje").value("No tienes permiso para hacer esto"));
+
+        String tokenAdmin = ingresar(correoAdmin, claveAdmin);
+        mockMvc.perform(get("/cuentas/solicitudes").header("Authorization", "Bearer " + tokenAdmin))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void elAdministradorApruebaUnaSolicitudYLaPersonaPuedeIngresar() throws Exception {
+        String correoNuevo = "camila.rios" + contador.incrementAndGet() + "@uco.net.co";
+        String solicitud = convertidorJson.writeValueAsString(
+                Map.of("nombre", "Camila Rios", "correo", correoNuevo, "telefono", "+573000000013", "rol", "PROFESOR"));
+        mockMvc.perform(post("/cuentas/solicitudes").contentType(MediaType.APPLICATION_JSON).content(solicitud))
+                .andExpect(status().isCreated());
+
+        String cuerpoIngreso = convertidorJson.writeValueAsString(Map.of("correo", correoNuevo, "clave", "x"));
+        mockMvc.perform(post("/sesion").contentType(MediaType.APPLICATION_JSON).content(cuerpoIngreso))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.mensaje").value("Tu solicitud sigue pendiente de aprobación"));
+
+        UUID id = usuarios.findByCorreo(correoNuevo).orElseThrow().getId();
+        String tokenAdmin = ingresar(correoAdmin, claveAdmin);
+        mockMvc.perform(post("/cuentas/solicitudes/" + id + "/aprobar").header("Authorization", "Bearer " + tokenAdmin))
+                .andExpect(status().isOk());
+
+        assertThat(usuarios.findByCorreo(correoNuevo).orElseThrow().getEstado()).isEqualTo(EstadoCuenta.ACTIVO);
+        verify(avisos).cuentaAprobada(any(), any());
+    }
+
+    @Test
+    void avisaCuandoNoExisteLaCuenta() throws Exception {
+        String cuerpo = convertidorJson.writeValueAsString(
+                Map.of("correo", "nadie.nadie0000@uco.net.co", "clave", "x"));
+
+        mockMvc.perform(post("/sesion").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("No encontramos una cuenta con ese correo. Puedes solicitarla"));
     }
 
     @Test

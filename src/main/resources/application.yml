@@ -87,3 +87,17 @@ kudos:
       campo-canal: ${STRAPI_CAMPO_CANAL:canal}
       campo-asunto: ${STRAPI_CAMPO_ASUNTO:asunto}
       campo-cuerpo: ${STRAPI_CAMPO_CUERPO:cuerpo}
+  cuentas:
+    dominio-correo: ${CORREO_DOMINIO:uco.net.co}
+    digitos-documento: ${CORREO_DIGITOS_DOCUMENTO:4}
+    longitud-clave-temporal: ${CLAVE_TEMPORAL_LONGITUD:10}
+    segundos-de-sesion: ${SESION_SEGUNDOS:28800}
+    prefijo-sesion: ${SESION_PREFIJO:sesion:}
+    administrador-nombre: ${ADMIN_NOMBRE}
+    administrador-correo: ${ADMIN_CORREO}
+    administrador-telefono: ${ADMIN_TELEFONO:}
+    administrador-clave: ${ADMIN_CLAVE}
+    plantilla-solicitud: ${PLANTILLA_SOLICITUD:cuenta-solicitud}
+    plantilla-aprobada: ${PLANTILLA_APROBADA:cuenta-aprobada}
+    plantilla-rechazada: ${PLANTILLA_RECHAZADA:cuenta-rechazada}
+    plantilla-aprobada-whatsapp: ${PLANTILLA_APROBADA_WHATSAPP:cuenta-aprobada-whatsapp}

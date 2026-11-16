@@ -12,7 +12,8 @@ public record ConfiguracionKudos(
         Cola cola,
         Cors cors,
         Canales canales,
-        Strapi strapi) {
+        Strapi strapi,
+        Cuentas cuentas) {
 
     public record Archivos(String carpeta, long tamanoMaximoEnBytes, List<String> tiposPermitidos, int cantidadMaxima) {
     }
@@ -52,5 +53,21 @@ public record ConfiguracionKudos(
     }
 
     public record ColeccionNotificaciones(String ruta, String campoCanal, String campoAsunto, String campoCuerpo) {
+    }
+
+    public record Cuentas(
+            String dominioCorreo,
+            int digitosDocumento,
+            int longitudClaveTemporal,
+            int segundosDeSesion,
+            String prefijoSesion,
+            String administradorNombre,
+            String administradorCorreo,
+            String administradorTelefono,
+            String administradorClave,
+            String plantillaSolicitud,
+            String plantillaAprobada,
+            String plantillaRechazada,
+            String plantillaAprobadaWhatsapp) {
     }
 }
