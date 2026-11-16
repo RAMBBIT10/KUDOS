@@ -1,6 +1,5 @@
 package co.edu.uco.kudos.compartido;
 
-import java.util.List;
 
 public final class ConfiguracionDePrueba {
 
@@ -23,7 +22,7 @@ public final class ConfiguracionDePrueba {
                         new ConfiguracionKudos.ColeccionNotificaciones(
                                 "/api/notificaciones", "canal", "asunto", "cuerpo")),
                 new ConfiguracionKudos.Cuentas(
-                        List.of("uco.net.co"), 4, "+57", 10, 3600, "sesion:", "Admin", "admin.prueba0000@uco.net.co", "",
+                        "+57", 10, 3600, "sesion:", "Admin", "admin.prueba0000@uco.net.co", "",
                         "clave_admin", "cuenta-solicitud", "cuenta-aprobada", "cuenta-rechazada",
                         "cuenta-aprobada-whatsapp"));
     }

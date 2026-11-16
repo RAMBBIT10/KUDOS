@@ -26,13 +26,13 @@ Autor: Diego Alejandro Vega
 
 ## 1. Cómo correrlo
 
-### Cuentas institucionales
+### Cuentas
 
-En UCO Kudos solo entra gente de la universidad. El correo tiene que ser `primernombre.primerapellido` + los últimos 4 números de la cédula + `@uco.net.co` (por ejemplo `diego.vega1234@uco.net.co`), tanto para estudiantes como para profesores. Los dominios permitidos (uno o varios separados por coma, por ejemplo `uco.net.co,gmail.com,hotmail.com`) y la cantidad de dígitos salen de `CORREO_DOMINIOS` y `CORREO_DIGITOS_DOCUMENTO`.
+En UCO Kudos nadie entra sin que el administrador lo apruebe. Para solicitar la cuenta sirve cualquier correo que exista (uco.net.co, gmail.com, hotmail.com, etc.): la clave temporal llega a ese correo y al WhatsApp registrado. El teléfono se escribe con 10 números y el prefijo del país sale de `TELEFONO_PREFIJO`.
 
 El flujo es este:
 
-1. Quien no tiene cuenta usa "Solicitar cuenta" (nombre, correo institucional, rol y teléfono). La solicitud queda `PENDIENTE` y al administrador le llega un correo.
+1. Quien no tiene cuenta usa "Solicitar cuenta" (nombre, correo, rol y teléfono). La solicitud queda `PENDIENTE` y al administrador le llega un correo.
 2. El administrador entra al panel y aprueba o rechaza. Al aprobar se crea la cuenta con una clave temporal que le llega a la persona por correo (y por WhatsApp). Al rechazar le llega un correo avisando.
 3. La persona ingresa con correo y clave. La clave se guarda con BCrypt y la sesión es un token opaco guardado en Redis que vence a las `SESION_SEGUNDOS`.
 4. Si intenta ingresar sin cuenta, con la solicitud pendiente o rechazada, la pantalla le dice exactamente cuál de los tres casos es.
@@ -64,7 +64,7 @@ Las rutas con sesión llevan la cabecera `Authorization: Bearer TOKEN`.
 Primero pido una cuenta (el correo tiene que cumplir el formato):
 
 ```
-curl -X POST http://localhost:3000/cuentas/solicitudes -H "Content-Type: application/json" -d "{\"nombre\":\"Ana Gomez\",\"correo\":\"ana.gomez1111@uco.net.co\",\"telefono\":\"+573000000001\",\"rol\":\"ESTUDIANTE\"}"
+curl -X POST http://localhost:3000/cuentas/solicitudes -H "Content-Type: application/json" -d "{\"nombre\":\"Ana Gomez\",\"correo\":\"ana.gomez@gmail.com\",\"telefono\":\"+573000000001\",\"rol\":\"ESTUDIANTE\"}"
 ```
 
 Ingreso como administrador (los datos de `ADMIN_CORREO` y `ADMIN_CLAVE` del `.env`) y copio el `token` de la respuesta:
@@ -144,7 +144,6 @@ Están todas en `.env.example`. Ninguna está escrita dentro del código.
 | `ARCHIVOS_CARPETA`, `ARCHIVOS_TAMANO_MAXIMO`, `ARCHIVOS_TIPOS_PERMITIDOS` | Reglas de los adjuntos |
 | `ADMIN_NOMBRE`, `ADMIN_CORREO`, `ADMIN_TELEFONO`, `ADMIN_CLAVE` | Cuenta del administrador, que se crea sola al arrancar; su correo recibe los avisos de solicitudes |
 | `TELEFONO_PREFIJO` | Prefijo del país que el sistema le agrega al teléfono de 10 números que escribe el usuario (por defecto `+57`) |
-| `CORREO_DOMINIOS`, `CORREO_DIGITOS_DOCUMENTO` | Dominios de correo permitidos, separados por coma, y cantidad de dígitos de la cédula en el correo (por defecto `uco.net.co` y 4) |
 | `SESION_SEGUNDOS`, `SESION_PREFIJO` | Vida de la sesión en Redis y prefijo de sus llaves |
 | `CLAVE_TEMPORAL_LONGITUD` | Largo de la clave temporal que se manda al aprobar |
 | `PLANTILLA_SOLICITUD`, `PLANTILLA_APROBADA`, `PLANTILLA_RECHAZADA`, `PLANTILLA_APROBADA_WHATSAPP` | Nombres de las plantillas de cuentas en Strapi (tienen valores por defecto) |
@@ -280,7 +279,7 @@ Primero definí qué se necesita (ABB) y después con qué lo resolví (SBB).
 | ABB-07 Auditoría | Módulo `auditoria`, tabla `auditoria` | Hecho |
 | ABB-08 Mensajería asíncrona | Lista de Redis como cola | Hecho |
 | ABB-09 Caché | Redis, `CacheKudosRedis` | Hecho |
-| ABB-10 Identidad y acceso | Cuentas institucionales aprobadas por el administrador, BCrypt, sesión en Redis y Spring Security | Hecho |
+| ABB-10 Identidad y acceso | Cuentas aprobadas por el administrador, BCrypt, sesión en Redis y Spring Security | Hecho |
 | ABB-11 Observabilidad | Endpoint `/salud`, auditoría | Parcial |
 | ABB-13 Catálogos de mensajes y notificaciones | Módulo `catalogos` consumiendo Strapi (CMS) | Hecho |
 | ABB-12 Entrega continua | GitHub Actions, SonarCloud, Trivy | Archivos listos, falta ejecutarlos |
@@ -480,8 +479,8 @@ Terminan en `Test` y no necesitan base de datos. Se corren con `mvn test`.
 | `StrapiClienteTest` | La consulta que se manda a Strapi, la primera fila de la respuesta, vacío si no hay filas y el token solo cuando está configurado |
 | `CatalogoMensajesStrapiTest` | Texto del código, el código mismo si no existe o si Strapi falla, y que la caché evita volver a preguntar |
 | `CatalogoNotificacionesStrapiTest` | Plantilla con asunto y cuerpo, asunto vacío si el canal no lo tiene y error si el canal no tiene plantilla |
-| `ReglasCuentaTest` | Formato del correo institucional (dominio, punto y 4 números), teléfono de 10 números y nombre |
-| `SolicitarCuentaTest` | Solicitud pendiente con aviso al administrador, correo no institucional, rol administrador y correo repetido |
+| `ReglasCuentaTest` | Formato del correo (cualquier dominio), teléfono de 10 números y nombre |
+| `SolicitarCuentaTest` | Solicitud pendiente con aviso al administrador, correo con formato inválido, rol administrador y correo repetido |
 | `ResolverSolicitudTest` | Aprobar (clave cifrada y aviso), rechazar, solicitud ya resuelta y solicitud inexistente |
 | `IniciarSesionTest` | Ingreso correcto, sin cuenta, pendiente, rechazada y clave incorrecta |
 | `ManejadorDeErroresTest` | Que cada error responda con el estado correcto y el texto sacado del catálogo |
@@ -530,7 +529,7 @@ Terminan en `IT` y están en `FlujoKudoIT`. Levantan la aplicación completa con
 | Límite de tamaño, de cantidad y lista de tipos permitidos en adjuntos | `AlmacenArchivos` |
 | Archivos guardados con nombre aleatorio | `AlmacenArchivos` |
 | Cabeceras de seguridad y sesión sin estado | Spring Security (`SeguridadConfig`) |
-| Solo entran cuentas institucionales aprobadas por el administrador | `SolicitarCuenta`, `ResolverSolicitud` y `ReglasCuenta` |
+| Solo entran cuentas aprobadas por el administrador | `SolicitarCuenta`, `ResolverSolicitud` y `ReglasCuenta` |
 | Claves guardadas con BCrypt y claves temporales aleatorias (`SecureRandom`) | `CifradorClavesBcrypt` y `GeneradorClavesSeguras` |
 | Sesión con token aleatorio en Redis que vence solo; rutas por rol | `SesionesRedis`, `FiltroSesion` y `SeguridadConfig` |
 | El autor del Kudo sale de la sesión, no del cuerpo de la petición | `KudosControlador` |

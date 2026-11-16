@@ -1,8 +1,6 @@
 package co.edu.uco.kudos.cuentas.dominio;
 
-import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class ReglasCuenta {
 
@@ -10,21 +8,16 @@ public class ReglasCuenta {
 
     private static final Pattern TELEFONO_LOCAL = Pattern.compile("^[0-9]{10}$");
 
-    private final Pattern correoInstitucional;
+    private static final Pattern CORREO = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$");
+
     private final String prefijoTelefono;
 
-    public ReglasCuenta(List<String> dominios, int digitosDocumento, String prefijoTelefono) {
+    public ReglasCuenta(String prefijoTelefono) {
         this.prefijoTelefono = prefijoTelefono;
-        String dominiosPermitidos = dominios.stream()
-                .map(String::trim)
-                .map(Pattern::quote)
-                .collect(Collectors.joining("|"));
-        this.correoInstitucional = Pattern.compile(
-                "^[a-z]+\\.[a-z]+[0-9]{" + digitosDocumento + "}@(" + dominiosPermitidos + ")$");
     }
 
     public boolean correoEsValido(String correo) {
-        return correo != null && correoInstitucional.matcher(correo).matches();
+        return correo != null && CORREO.matcher(correo.trim()).matches();
     }
 
     public String normalizarTelefono(String telefono) {

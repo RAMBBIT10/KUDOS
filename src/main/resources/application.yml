@@ -88,8 +88,6 @@ kudos:
       campo-asunto: ${STRAPI_CAMPO_ASUNTO:asunto}
       campo-cuerpo: ${STRAPI_CAMPO_CUERPO:cuerpo}
   cuentas:
-    dominios-correo: ${CORREO_DOMINIOS:uco.net.co}
-    digitos-documento: ${CORREO_DIGITOS_DOCUMENTO:4}
     prefijo-telefono: ${TELEFONO_PREFIJO:+57}
     longitud-clave-temporal: ${CLAVE_TEMPORAL_LONGITUD:10}
     segundos-de-sesion: ${SESION_SEGUNDOS:28800}

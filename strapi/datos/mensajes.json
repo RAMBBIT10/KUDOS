@@ -56,8 +56,8 @@
     "texto": "El nombre no es válido"
   },
   {
-    "codigo": "CORREO_INSTITUCIONAL_INVALIDO",
-    "texto": "El correo debe ser primernombre.primerapellido más los últimos 4 números de tu cédula, terminando en @uco.net.co"
+    "codigo": "CORREO_INVALIDO",
+    "texto": "El correo no es válido, escríbelo completo, por ejemplo nombre@gmail.com"
   },
   {
     "codigo": "TELEFONO_INVALIDO",

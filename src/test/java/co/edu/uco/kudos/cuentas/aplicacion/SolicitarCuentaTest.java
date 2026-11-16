@@ -17,7 +17,6 @@ import co.edu.uco.kudos.kudos.aplicacion.puertos.UsuarioRepositorio;
 import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
 import co.edu.uco.kudos.kudos.dominio.Rol;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,7 @@ class SolicitarCuentaTest {
 
     private final UsuarioRepositorio usuarios = mock(UsuarioRepositorio.class);
     private final AvisosDeCuenta avisos = mock(AvisosDeCuenta.class);
-    private final SolicitarCuenta casoDeUso = new SolicitarCuenta(usuarios, new ReglasCuenta(List.of("uco.net.co"), 4, "+57"), avisos);
+    private final SolicitarCuenta casoDeUso = new SolicitarCuenta(usuarios, new ReglasCuenta("+57"), avisos);
 
     private PeticionSolicitudCuenta peticion(String correo, Rol rol) {
         return new PeticionSolicitudCuenta("Diego Vega", correo, "3001234567", rol);
@@ -48,10 +47,10 @@ class SolicitarCuentaTest {
     }
 
     @Test
-    void rechazaUnCorreoQueNoEsInstitucional() {
-        assertThatThrownBy(() -> casoDeUso.ejecutar(peticion("diego@gmail.com", Rol.ESTUDIANTE)))
+    void rechazaUnCorreoSinFormatoValido() {
+        assertThatThrownBy(() -> casoDeUso.ejecutar(peticion("diego.gmail.com", Rol.ESTUDIANTE)))
                 .isInstanceOf(ReglaDeNegocioException.class)
-                .hasMessage("CORREO_INSTITUCIONAL_INVALIDO");
+                .hasMessage("CORREO_INVALIDO");
         verify(usuarios, never()).guardar(any(), any(), any(), any(), any(), any());
     }
 

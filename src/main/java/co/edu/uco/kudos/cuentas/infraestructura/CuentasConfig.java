@@ -11,6 +11,6 @@ public class CuentasConfig {
     @Bean
     ReglasCuenta reglasCuenta(ConfiguracionKudos configuracion) {
         ConfiguracionKudos.Cuentas datos = configuracion.cuentas();
-        return new ReglasCuenta(datos.dominiosCorreo(), datos.digitosDocumento(), datos.prefijoTelefono());
+        return new ReglasCuenta(datos.prefijoTelefono());
     }
 }

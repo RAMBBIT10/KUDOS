@@ -2,42 +2,33 @@ package co.edu.uco.kudos.cuentas.dominio;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ReglasCuentaTest {
 
-    private final ReglasCuenta reglas = new ReglasCuenta(List.of("uco.net.co"), 4, "+57");
+    private final ReglasCuenta reglas = new ReglasCuenta("+57");
 
     @Test
-    void aceptaElFormatoInstitucional() {
+    void aceptaCorreosDeCualquierDominio() {
         assertThat(reglas.correoEsValido("diego.vega1234@uco.net.co")).isTrue();
+        assertThat(reglas.correoEsValido("diego@gmail.com")).isTrue();
+        assertThat(reglas.correoEsValido("diego_vega@hotmail.com")).isTrue();
+        assertThat(reglas.correoEsValido("ramb.bit2406@yahoo.es")).isTrue();
     }
 
     @Test
-    void rechazaCorreosDeOtroDominio() {
-        assertThat(reglas.correoEsValido("diego.vega1234@gmail.com")).isFalse();
+    void rechazaCorreosSinFormatoValido() {
+        assertThat(reglas.correoEsValido("diego.gmail.com")).isFalse();
+        assertThat(reglas.correoEsValido("diego@")).isFalse();
+        assertThat(reglas.correoEsValido("@gmail.com")).isFalse();
+        assertThat(reglas.correoEsValido("diego@gmail")).isFalse();
+        assertThat(reglas.correoEsValido("di ego@gmail.com")).isFalse();
     }
 
     @Test
-    void aceptaVariosDominiosPermitidos() {
-        ReglasCuenta variosDominios = new ReglasCuenta(List.of("uco.net.co", "gmail.com", "hotmail.com"), 4, "+57");
-        assertThat(variosDominios.correoEsValido("diego.vega1234@gmail.com")).isTrue();
-        assertThat(variosDominios.correoEsValido("diego.vega1234@hotmail.com")).isTrue();
-        assertThat(variosDominios.correoEsValido("diego.vega1234@yahoo.com")).isFalse();
-    }
-
-    @Test
-    void rechazaCorreosSinLosCuatroNumeros() {
-        assertThat(reglas.correoEsValido("diego.vega@uco.net.co")).isFalse();
-        assertThat(reglas.correoEsValido("diego.vega123@uco.net.co")).isFalse();
-        assertThat(reglas.correoEsValido("diego.vega12345@uco.net.co")).isFalse();
-    }
-
-    @Test
-    void rechazaCorreosNulosOSinPunto() {
+    void rechazaCorreosNulosOVacios() {
         assertThat(reglas.correoEsValido(null)).isFalse();
-        assertThat(reglas.correoEsValido("diegovega1234@uco.net.co")).isFalse();
+        assertThat(reglas.correoEsValido("")).isFalse();
     }
 
     @Test

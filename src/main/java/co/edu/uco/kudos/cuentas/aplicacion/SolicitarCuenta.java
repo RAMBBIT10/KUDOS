@@ -29,7 +29,7 @@ public class SolicitarCuenta {
 
         String correo = peticion.correo() == null ? null : peticion.correo().trim().toLowerCase();
         if (!reglas.correoEsValido(correo)) {
-            throw new ReglaDeNegocioException("CORREO_INSTITUCIONAL_INVALIDO");
+            throw new ReglaDeNegocioException("CORREO_INVALIDO");
         }
 
         if (!reglas.telefonoEsValido(peticion.telefono())) {
