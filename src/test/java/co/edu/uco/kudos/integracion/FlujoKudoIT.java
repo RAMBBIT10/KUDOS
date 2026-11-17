@@ -1,17 +1,35 @@
 package co.edu.uco.kudos.integracion;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import co.edu.uco.kudos.auditoria.AuditoriaEntidad;
+import co.edu.uco.kudos.auditoria.AuditoriaJpa;
+import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.AvisosDeCuenta;
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.CifradorClaves;
+import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
+import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioEntidad;
+import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioJpa;
+import co.edu.uco.kudos.kudos.dominio.EstadoAuditoria;
+import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
+import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorCorreo;
+import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorWhatsapp;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,26 +39,6 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import co.edu.uco.kudos.auditoria.AuditoriaEntidad;
-import co.edu.uco.kudos.auditoria.AuditoriaJpa;
-import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
-import co.edu.uco.kudos.cuentas.aplicacion.puertos.AvisosDeCuenta;
-import co.edu.uco.kudos.cuentas.aplicacion.puertos.CifradorClaves;
-import co.edu.uco.kudos.kudos.dominio.EstadoAuditoria;
-import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
-import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioEntidad;
-import co.edu.uco.kudos.kudos.infraestructura.persistencia.UsuarioJpa;
-import co.edu.uco.kudos.notificaciones.aplicacion.ResultadoEnvio;
-import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorCorreo;
-import co.edu.uco.kudos.notificaciones.infraestructura.NotificadorWhatsapp;
 
 @SpringBootTest(properties = {
         "kudos.cuentas.administrador-nombre=Administrador de prueba",
@@ -86,8 +84,8 @@ class FlujoKudoIT {
     @BeforeEach
     void prepararCanalesFalsos() {
         when(catalogoMensajes.texto("MENSAJE_INVALIDO")).thenReturn("El mensaje no es válido");
-        when(catalogoMensajes.texto("TIPO_ARCHIVO_NO_PERMITIDO")).thenReturn("El tipo de archivo no está permitido");
         when(catalogoMensajes.texto("DESTINATARIO_NO_EXISTE")).thenReturn("El destinatario no existe");
+        when(catalogoMensajes.texto("TIPO_ARCHIVO_NO_PERMITIDO")).thenReturn("El tipo de archivo no está permitido");
         when(catalogoMensajes.texto("SESION_INVALIDA")).thenReturn("Debes iniciar sesión");
         when(catalogoMensajes.texto("SIN_PERMISO")).thenReturn("No tienes permiso para hacer esto");
         when(catalogoMensajes.texto("SOLICITUD_ENVIADA")).thenReturn("Tu solicitud fue enviada");
@@ -161,8 +159,8 @@ class FlujoKudoIT {
 
     @Test
     void publicaUnKudoConAdjuntoLoGuardaNotificaPorLosTresCanalesYAudita() throws Exception {
-        Sesion autor = crearUsuario("Ana", "+573000000001");
-        Sesion destinatario = crearUsuario("Luis", "+573000000002");
+        Sesion autor = crearUsuario("Ana", "3000000001");
+        Sesion destinatario = crearUsuario("Luis", "3000000002");
         MockMultipartFile adjunto = new MockMultipartFile(
                 "archivos", "nota.pdf", "application/pdf", "contenido de prueba".getBytes());
 
@@ -190,8 +188,8 @@ class FlujoKudoIT {
 
     @Test
     void listaSoloLosKudosDelUsuarioConSesionConPaginacionPorCursor() throws Exception {
-        Sesion autor = crearUsuario("Carlos", "+573000000003");
-        Sesion destinatario = crearUsuario("Marta", "+573000000004");
+        Sesion autor = crearUsuario("Carlos", "3000000003");
+        Sesion destinatario = crearUsuario("Marta", "3000000004");
         for (int numero = 1; numero <= 3; numero++) {
             publicar(autor, destinatario.id(), "Kudo numero " + numero);
             Thread.sleep(30);
@@ -220,8 +218,8 @@ class FlujoKudoIT {
 
     @Test
     void muestraElKudoNuevoAunqueLaListaYaEstuvieraEnCache() throws Exception {
-        Sesion autor = crearUsuario("Pedro", "+573000000005");
-        Sesion destinatario = crearUsuario("Sofia", "+573000000006");
+        Sesion autor = crearUsuario("Pedro", "3000000005");
+        Sesion destinatario = crearUsuario("Sofia", "3000000006");
 
         mockMvc.perform(get("/kudos").header("Authorization", "Bearer " + destinatario.token()))
                 .andExpect(status().isOk())
@@ -236,8 +234,8 @@ class FlujoKudoIT {
 
     @Test
     void rechazaUnMensajeVacio() throws Exception {
-        Sesion autor = crearUsuario("Ines", "+573000000007");
-        Sesion destinatario = crearUsuario("Jorge", "+573000000008");
+        Sesion autor = crearUsuario("Ines", "3000000007");
+        Sesion destinatario = crearUsuario("Jorge", "3000000008");
 
         mockMvc.perform(armarPublicacion(autor, destinatario.id(), ""))
                 .andExpect(status().isBadRequest())
@@ -246,8 +244,8 @@ class FlujoKudoIT {
 
     @Test
     void rechazaUnArchivoDeUnTipoNoPermitido() throws Exception {
-        Sesion autor = crearUsuario("Rosa", "+573000000009");
-        Sesion destinatario = crearUsuario("Tomas", "+573000000010");
+        Sesion autor = crearUsuario("Rosa", "3000000009");
+        Sesion destinatario = crearUsuario("Tomas", "3000000010");
         MockMultipartFile peligroso = new MockMultipartFile(
                 "archivos", "virus.exe", "application/x-msdownload", "MZ".getBytes());
 
@@ -257,7 +255,7 @@ class FlujoKudoIT {
 
     @Test
     void respondeNoEncontradoSiElDestinatarioNoExiste() throws Exception {
-        Sesion autor = crearUsuario("Elena", "+573000000011");
+        Sesion autor = crearUsuario("Elena", "3000000011");
 
         mockMvc.perform(armarPublicacion(autor, UUID.randomUUID(), "Hola"))
                 .andExpect(status().isNotFound())
@@ -275,7 +273,7 @@ class FlujoKudoIT {
 
     @Test
     void elPanelDeSolicitudesSoloLoVeElAdministrador() throws Exception {
-        Sesion estudiante = crearUsuario("Nora", "+573000000012");
+        Sesion estudiante = crearUsuario("Nora", "3000000012");
 
         mockMvc.perform(get("/cuentas/solicitudes").header("Authorization", "Bearer " + estudiante.token()))
                 .andExpect(status().isForbidden())
@@ -290,7 +288,7 @@ class FlujoKudoIT {
     void elAdministradorApruebaUnaSolicitudYLaPersonaPuedeIngresar() throws Exception {
         String correoNuevo = "camila.rios" + contador.incrementAndGet() + "@uco.net.co";
         String solicitud = convertidorJson.writeValueAsString(
-                Map.of("nombre", "Camila Rios", "correo", correoNuevo, "telefono", "+573000000013", "rol", "PROFESOR"));
+                Map.of("nombre", "Camila Rios", "correo", correoNuevo, "telefono", "3000000013", "rol", "PROFESOR"));
         mockMvc.perform(post("/cuentas/solicitudes").contentType(MediaType.APPLICATION_JSON).content(solicitud))
                 .andExpect(status().isCreated());
 
