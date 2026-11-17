@@ -23,6 +23,14 @@ class ReglasCuentaTest {
         assertThat(reglas.correoEsValido("@gmail.com")).isFalse();
         assertThat(reglas.correoEsValido("diego@gmail")).isFalse();
         assertThat(reglas.correoEsValido("di ego@gmail.com")).isFalse();
+        assertThat(reglas.correoEsValido("diego@@gmail.com")).isFalse();
+        assertThat(reglas.correoEsValido("diego@gmail..com")).isFalse();
+        assertThat(reglas.correoEsValido("diego@.gmail.com")).isFalse();
+        assertThat(reglas.correoEsValido("diego@gmail.c")).isFalse();
+        assertThat(reglas.correoEsValido("diego@gmail.c1")).isFalse();
+        assertThat(reglas.correoEsValido("diego@gm_ail.com")).isFalse();
+        assertThat(reglas.correoEsValido("die/go@gmail.com")).isFalse();
+        assertThat(reglas.correoEsValido("a".repeat(250) + "@gmail.com")).isFalse();
     }
 
     @Test
