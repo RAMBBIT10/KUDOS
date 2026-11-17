@@ -54,8 +54,11 @@ public class AvisosDeCuentaExternos implements AvisosDeCuenta {
                 "nombre", usuario.nombre(),
                 "correo", usuario.correo(),
                 "clave", claveTemporal);
-        enviarCorreo(usuario, datos.plantillaAprobada(), valores);
-        avisarPorWhatsapp(usuario, valores);
+        boolean llegoElCorreo = intentarCorreo(usuario, datos.plantillaAprobada(), valores);
+        boolean llegoElWhatsapp = intentarWhatsapp(usuario, valores);
+        if (!llegoElCorreo && !llegoElWhatsapp) {
+            throw new ServicioExternoException("AVISO_NO_ENVIADO", new IllegalStateException("No salió ningún aviso"));
+        }
     }
 
     @Override
@@ -68,16 +71,28 @@ public class AvisosDeCuentaExternos implements AvisosDeCuenta {
             PlantillaNotificacion plantilla = catalogo.plantilla(nombrePlantilla);
             correo.enviar(usuario.correo(), plantilla.asunto(), plantilla.rellenar(valores));
         } catch (RuntimeException error) {
+            registro.warn("No se pudo avisar por correo a {}: {}", usuario.correo(), error.getMessage());
             throw new ServicioExternoException("AVISO_NO_ENVIADO", error);
         }
     }
 
-    private void avisarPorWhatsapp(Usuario usuario, Map<String, String> valores) {
+    private boolean intentarCorreo(Usuario usuario, String nombrePlantilla, Map<String, String> valores) {
+        try {
+            enviarCorreo(usuario, nombrePlantilla, valores);
+            return true;
+        } catch (ServicioExternoException error) {
+            return false;
+        }
+    }
+
+    private boolean intentarWhatsapp(Usuario usuario, Map<String, String> valores) {
         try {
             PlantillaNotificacion plantilla = catalogo.plantilla(datos.plantillaAprobadaWhatsapp());
             whatsapp.enviar(usuario.telefono(), plantilla.rellenar(valores));
+            return true;
         } catch (RuntimeException error) {
-            registro.warn("No se pudo avisar por WhatsApp a {}", usuario.correo());
+            registro.warn("No se pudo avisar por WhatsApp a {}: {}", usuario.correo(), error.getMessage());
+            return false;
         }
     }
 }

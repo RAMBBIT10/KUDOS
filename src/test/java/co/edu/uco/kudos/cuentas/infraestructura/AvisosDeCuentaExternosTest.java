@@ -61,13 +61,25 @@ class AvisosDeCuentaExternosTest {
     }
 
     @Test
-    void siFallaElCorreoDeAprobacionSeLanzaServicioExterno() {
+    void siFallanElCorreoYWhatsappSeLanzaServicioExterno() {
         when(catalogo.plantilla("cuenta-aprobada")).thenReturn(new PlantillaNotificacion("Aprobada", "Clave {clave}"));
+        when(catalogo.plantilla("cuenta-aprobada-whatsapp")).thenReturn(new PlantillaNotificacion("", "WA {clave}"));
         doThrow(new RuntimeException("smtp caido")).when(correo).enviar(anyString(), anyString(), anyString());
+        doThrow(new RuntimeException("twilio caido")).when(whatsapp).enviar(anyString(), anyString());
 
         assertThatThrownBy(() -> avisos.cuentaAprobada(usuario, "Temp123"))
                 .isInstanceOf(ServicioExternoException.class)
                 .hasMessage("AVISO_NO_ENVIADO");
+    }
+
+    @Test
+    void siFallaSoloElCorreoElWhatsappIgualSale() {
+        when(catalogo.plantilla("cuenta-aprobada")).thenReturn(new PlantillaNotificacion("Aprobada", "Clave {clave}"));
+        when(catalogo.plantilla("cuenta-aprobada-whatsapp")).thenReturn(new PlantillaNotificacion("", "WA {clave}"));
+        doThrow(new RuntimeException("smtp caido")).when(correo).enviar(anyString(), anyString(), anyString());
+
+        assertThatCode(() -> avisos.cuentaAprobada(usuario, "Temp123")).doesNotThrowAnyException();
+        verify(whatsapp).enviar("+573000000002", "WA Temp123");
     }
 
     @Test
