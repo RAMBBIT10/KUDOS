@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   desplegar:
-    name: Publicar imagen y desplegar en Azure
+    name: Publicar imagen y desplegar la API en Azure Container Apps
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: produccion
@@ -41,12 +41,17 @@ jobs:
             ${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}
             ${{ env.IMAGEN }}:latest
 
-      - name: Desplegar en Azure App Service
-        uses: azure/webapps-deploy@v3
+      - name: Iniciar sesion en Azure
+        uses: azure/login@v2
         with:
-          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Desplegar la nueva imagen en Container Apps
+        run: |
+          az containerapp update \
+            --name "${{ vars.AZURE_API_NOMBRE }}" \
+            --resource-group "${{ vars.AZURE_GRUPO }}" \
+            --image "${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}"
 
       - name: Verificar que la aplicacion responde
         run: |
@@ -64,7 +69,7 @@ jobs:
 
   desplegar-catalogos:
     name: Publicar y desplegar el catalogo (Strapi)
-    if: ${{ github.event.workflow_run.conclusion == 'success' && vars.AZURE_STRAPI_NOMBRE != '' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: produccion
     steps:
@@ -92,9 +97,16 @@ jobs:
             ${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}
             ${{ env.IMAGEN }}:latest
 
-      - name: Desplegar en Azure App Service
-        uses: azure/webapps-deploy@v3
+      - name: Iniciar sesion en Azure
+        if: ${{ vars.AZURE_STRAPI_NOMBRE != '' }}
+        uses: azure/login@v2
         with:
-          app-name: ${{ vars.AZURE_STRAPI_NOMBRE }}
-          publish-profile: ${{ secrets.AZURE_STRAPI_PUBLISH_PROFILE }}
-          images: ${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Desplegar la nueva imagen en Container Apps
+        if: ${{ vars.AZURE_STRAPI_NOMBRE != '' }}
+        run: |
+          az containerapp update \
+            --name "${{ vars.AZURE_STRAPI_NOMBRE }}" \
+            --resource-group "${{ vars.AZURE_GRUPO }}" \
+            --image "${{ env.IMAGEN }}:${{ github.event.workflow_run.head_sha }}"
