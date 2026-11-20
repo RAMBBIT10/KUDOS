@@ -1,105 +1,83 @@
-package co.edu.uco.kudos.cuentas.infraestructura;
+package co.edu.uco.kudos.cuentas.aplicacion;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import co.edu.uco.kudos.catalogos.aplicacion.CatalogoMensajes;
-import co.edu.uco.kudos.cuentas.aplicacion.CambiarClave;
-import co.edu.uco.kudos.cuentas.aplicacion.IniciarSesion;
-import co.edu.uco.kudos.cuentas.aplicacion.ListarSolicitudes;
-import co.edu.uco.kudos.cuentas.aplicacion.ResolverSolicitud;
-import co.edu.uco.kudos.cuentas.aplicacion.ResultadoSesion;
-import co.edu.uco.kudos.cuentas.aplicacion.SolicitarCuenta;
+import co.edu.uco.kudos.cuentas.aplicacion.puertos.CifradorClaves;
 import co.edu.uco.kudos.cuentas.aplicacion.puertos.Sesiones;
+import co.edu.uco.kudos.kudos.aplicacion.NoAutorizadoException;
+import co.edu.uco.kudos.kudos.aplicacion.NoEncontradoException;
+import co.edu.uco.kudos.kudos.aplicacion.puertos.UsuarioRepositorio;
 import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
 import co.edu.uco.kudos.kudos.dominio.Rol;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
-class ControladoresDeCuentasTest {
+class IniciarSesionTest {
 
-    private final Usuario pendiente = new Usuario(
-            UUID.randomUUID(), "Luis", "luis@uco.net.co", "+573000000002", Rol.ESTUDIANTE, EstadoCuenta.PENDIENTE);
-
-    private final SolicitarCuenta solicitarCuenta = mock(SolicitarCuenta.class);
-    private final ListarSolicitudes listarSolicitudes = mock(ListarSolicitudes.class);
-    private final ResolverSolicitud resolverSolicitud = mock(ResolverSolicitud.class);
-    private final CatalogoMensajes catalogo = mock(CatalogoMensajes.class);
-    private final CuentasControlador cuentas =
-            new CuentasControlador(solicitarCuenta, listarSolicitudes, resolverSolicitud, catalogo);
-
-    private final IniciarSesion iniciarSesion = mock(IniciarSesion.class);
-    private final CambiarClave cambiarClave = mock(CambiarClave.class);
+    private final UUID id = UUID.randomUUID();
+    private final String correo = "diego.vega1234@uco.net.co";
+    private final UsuarioRepositorio usuarios = mock(UsuarioRepositorio.class);
+    private final CifradorClaves cifrador = mock(CifradorClaves.class);
     private final Sesiones sesiones = mock(Sesiones.class);
-    private final SesionControlador sesion = new SesionControlador(iniciarSesion, cambiarClave, sesiones, catalogo);
+    private final IniciarSesion casoDeUso = new IniciarSesion(usuarios, cifrador, sesiones);
 
-    @Test
-    void solicitarDevuelveElMensajeDelCatalogo() {
-        when(catalogo.texto("SOLICITUD_ENVIADA")).thenReturn("Solicitud enviada");
-
-        var respuesta = cuentas.solicitar(new CuentasControlador.PeticionSolicitud("Luis", "luis@uco.net.co", "+573000000002", Rol.ESTUDIANTE));
-
-        assertThat(respuesta).containsEntry("mensaje", "Solicitud enviada");
-        verify(solicitarCuenta).ejecutar(any());
+    private Usuario conEstado(EstadoCuenta estado) {
+        return new Usuario(id, "Diego", correo, "+573001234567", Rol.ESTUDIANTE, estado);
     }
 
     @Test
-    void listarDevuelveSoloLosDatosPublicos() {
-        when(listarSolicitudes.ejecutar()).thenReturn(List.of(pendiente));
+    void abreSesionConClaveCorrecta() {
+        when(usuarios.buscarPorCorreo(correo)).thenReturn(Optional.of(conEstado(EstadoCuenta.ACTIVO)));
+        when(usuarios.claveCifradaDe(id)).thenReturn(Optional.of("cifrada"));
+        when(cifrador.coincide("miClave", "cifrada")).thenReturn(true);
+        when(sesiones.abrir(id)).thenReturn("token123");
 
-        var solicitudes = cuentas.listar();
+        ResultadoSesion resultado = casoDeUso.ejecutar(" Diego.Vega1234@uco.net.co ", "miClave");
 
-        assertThat(solicitudes).hasSize(1);
-        assertThat(solicitudes.get(0).correo()).isEqualTo("luis@uco.net.co");
+        assertThat(resultado.token()).isEqualTo("token123");
+        assertThat(resultado.usuario().id()).isEqualTo(id);
     }
 
     @Test
-    void aprobarYRechazarLlamanALaAplicacionYDevuelvenMensaje() {
-        when(catalogo.texto("CUENTA_APROBADA")).thenReturn("Aprobada");
-        when(catalogo.texto("CUENTA_RECHAZADA")).thenReturn("Rechazada");
+    void avisaSiNoExisteLaCuenta() {
+        when(usuarios.buscarPorCorreo(correo)).thenReturn(Optional.empty());
 
-        assertThat(cuentas.aprobar(pendiente.id())).containsEntry("mensaje", "Aprobada");
-        assertThat(cuentas.rechazar(pendiente.id())).containsEntry("mensaje", "Rechazada");
-
-        verify(resolverSolicitud).aprobar(pendiente.id());
-        verify(resolverSolicitud).rechazar(pendiente.id());
+        assertThatThrownBy(() -> casoDeUso.ejecutar(correo, "x"))
+                .isInstanceOf(NoEncontradoException.class)
+                .hasMessage("CUENTA_NO_EXISTE");
     }
 
     @Test
-    void ingresarDevuelveTokenYUsuario() {
-        when(iniciarSesion.ejecutar("luis@uco.net.co", "clave")).thenReturn(new ResultadoSesion("tok", pendiente));
+    void avisaSiLaSolicitudSigueEnEspera() {
+        when(usuarios.buscarPorCorreo(correo)).thenReturn(Optional.of(conEstado(EstadoCuenta.PENDIENTE)));
 
-        var respuesta = sesion.ingresar(new SesionControlador.PeticionIngreso("luis@uco.net.co", "clave"));
-
-        assertThat(respuesta.token()).isEqualTo("tok");
-        assertThat(respuesta.usuario().nombre()).isEqualTo("Luis");
+        assertThatThrownBy(() -> casoDeUso.ejecutar(correo, "x"))
+                .isInstanceOf(NoAutorizadoException.class)
+                .hasMessage("SOLICITUD_PENDIENTE");
     }
 
     @Test
-    void actualDevuelveElUsuarioDeLaSesion() {
-        assertThat(sesion.actual(pendiente).correo()).isEqualTo("luis@uco.net.co");
+    void avisaSiLaSolicitudFueRechazada() {
+        when(usuarios.buscarPorCorreo(correo)).thenReturn(Optional.of(conEstado(EstadoCuenta.RECHAZADO)));
+
+        assertThatThrownBy(() -> casoDeUso.ejecutar(correo, "x"))
+                .isInstanceOf(NoAutorizadoException.class)
+                .hasMessage("SOLICITUD_RECHAZADA");
     }
 
     @Test
-    void cambiarClaveLlamaALaAplicacionYDevuelveMensaje() {
-        when(catalogo.texto("CLAVE_CAMBIADA")).thenReturn("Clave cambiada");
+    void rechazaUnaClaveIncorrecta() {
+        when(usuarios.buscarPorCorreo(correo)).thenReturn(Optional.of(conEstado(EstadoCuenta.ACTIVO)));
+        when(usuarios.claveCifradaDe(id)).thenReturn(Optional.of("cifrada"));
+        when(cifrador.coincide("mala", "cifrada")).thenReturn(false);
 
-        var respuesta = sesion.cambiarClave(pendiente, new SesionControlador.PeticionCambioClave("vieja", "nueva1234"));
-
-        assertThat(respuesta).containsEntry("mensaje", "Clave cambiada");
-        verify(cambiarClave).ejecutar(pendiente, "vieja", "nueva1234");
-    }
-
-    @Test
-    void salirCierraLaSesionDelToken() {
-        sesion.salir(new UsernamePasswordAuthenticationToken(pendiente, "tok", List.of()));
-
-        verify(sesiones).cerrar("tok");
+        assertThatThrownBy(() -> casoDeUso.ejecutar(correo, "mala"))
+                .isInstanceOf(NoAutorizadoException.class)
+                .hasMessage("CLAVE_INCORRECTA");
     }
 }
