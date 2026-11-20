@@ -1,17 +1,9 @@
 package co.edu.uco.kudos.cuentas.infraestructura;
 
-import java.util.Optional;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import co.edu.uco.kudos.cuentas.aplicacion.puertos.Sesiones;
 import co.edu.uco.kudos.kudos.aplicacion.puertos.UsuarioRepositorio;
@@ -19,6 +11,13 @@ import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
 import co.edu.uco.kudos.kudos.dominio.Rol;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
 import jakarta.servlet.FilterChain;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 class FiltroSesionTest {
 
@@ -87,8 +86,25 @@ class FiltroSesionTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
+    @Test
+    void enLaRutaPushAceptaElTokenPorParametro() throws Exception {
+        MockHttpServletRequest peticion = new MockHttpServletRequest("GET", "/push");
+        peticion.setParameter("token", "abc");
+        when(sesiones.usuarioDe("abc")).thenReturn(Optional.of(usuarioId));
+        when(usuarios.buscarPorId(usuarioId)).thenReturn(Optional.of(usuarioConEstado(EstadoCuenta.ACTIVO)));
+
+        filtro.doFilter(peticion, respuesta, cadena);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    }
+
+    @Test
+    void fueraDeLaRutaPushElParametroTokenSeIgnora() throws Exception {
+        MockHttpServletRequest peticion = new MockHttpServletRequest("GET", "/kudos");
+        peticion.setParameter("token", "abc");
+
+        filtro.doFilter(peticion, respuesta, cadena);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
 }
-
-    
-    
-

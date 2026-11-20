@@ -1,11 +1,10 @@
 package co.edu.uco.kudos.cuentas.aplicacion;
 
-import java.util.Optional;
-import java.util.UUID;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -15,8 +14,12 @@ import co.edu.uco.kudos.cuentas.aplicacion.puertos.AvisosDeCuenta;
 import co.edu.uco.kudos.cuentas.dominio.ReglasCuenta;
 import co.edu.uco.kudos.kudos.aplicacion.ReglaDeNegocioException;
 import co.edu.uco.kudos.kudos.aplicacion.puertos.UsuarioRepositorio;
+import co.edu.uco.kudos.kudos.dominio.EstadoCuenta;
 import co.edu.uco.kudos.kudos.dominio.Rol;
 import co.edu.uco.kudos.kudos.dominio.Usuario;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
 
 class SolicitarCuentaTest {
 
@@ -28,7 +31,20 @@ class SolicitarCuentaTest {
         return new PeticionSolicitudCuenta("Diego Vega", correo, "3001234567", rol);
     }
 
+    @Test
+    void guardaLaSolicitudComoPendienteYAvisaAlAdministrador() {
+        Usuario guardado = new Usuario(UUID.randomUUID(), "Diego Vega", "diego.vega1234@uco.net.co",
+                "+573001234567", Rol.ESTUDIANTE, EstadoCuenta.PENDIENTE);
+        when(usuarios.buscarPorCorreo("diego.vega1234@uco.net.co")).thenReturn(Optional.empty());
+        when(usuarios.guardar(any(), any(), any(), any(), any(), any())).thenReturn(guardado);
 
+        Usuario resultado = casoDeUso.ejecutar(peticion("Diego.Vega1234@uco.net.co", Rol.ESTUDIANTE));
+
+        assertThat(resultado.estado()).isEqualTo(EstadoCuenta.PENDIENTE);
+        verify(usuarios).guardar(eq("Diego Vega"), eq("diego.vega1234@uco.net.co"), eq("+573001234567"),
+                eq(Rol.ESTUDIANTE), eq(EstadoCuenta.PENDIENTE), isNull());
+        verify(avisos).solicitudRecibida(guardado);
+    }
 
     @Test
     void rechazaUnCorreoSinFormatoValido() {
